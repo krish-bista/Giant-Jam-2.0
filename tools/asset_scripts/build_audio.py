@@ -218,7 +218,7 @@ MUSIC = {
     "music_city": "28 - Tension.ogg", "music_city_boss": "17 - Fight.ogg",
     "music_jungle": "11 - Clearing.ogg", "music_jungle_boss": "10 - Dark Castle.ogg",
     "music_core": "21 - Dungeon.ogg", "music_core_boss": "24 - Final Area.ogg",
-    "music_final": "14 - Curse.ogg", "music_ending": "16 - Melancholia.ogg",
+    "music_final": "14 - Curse.ogg", "music_ending": "16 - Melancholia.ogg", "music_grim": "29 - Lament.ogg",
 }
 for f in os.listdir(MUS):
     if f.startswith("music_"):
@@ -226,3 +226,28 @@ for f in os.listdir(MUS):
 for key, src in MUSIC.items():
     shutil.copyfile(os.path.join(PACK, "Audio", "Musics", src), os.path.join(MUS, key + ".ogg"))
 print("audio built")
+
+# ---------------- v3 additions ----------------
+def read_wav(path):
+    with wave.open(path) as w:
+        return np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float64) / 32768
+
+# Hypno Reverse: the deflect sound played backwards + a rising whoosh that cuts off (time rewinding)
+dfl = read_wav(os.path.join(SFX, "sfx_deflect.wav"))[::-1]
+rise = highpass(noise(0.6), 900) * np.linspace(0, 1, int(0.6 * SR)) ** 2
+save("sfx_hypno_reverse", mix(dfl * 0.8, np.concatenate([np.zeros(max(0, len(dfl) - len(rise))), rise * 0.5])), 0.9)
+# Revive: rising shimmer
+d = 1.0; tt = t(d)
+rv = sum(np.sin(2 * math.pi * f * (1 + tt) * tt) for f in (440, 660, 880)) * np.sin(np.pi * tt / d)
+save("sfx_revive", reverb(rv, 0.4), 0.6)
+# Grave: low thud + a distant bell toll
+d = 2.2; tt = t(d)
+toll = sum(a * np.sin(2 * math.pi * f * tt) * np.exp(-k * tt) for f, a, k in ((196, 1.0, 1.4), (392, 0.5, 2.0), (523, 0.3, 2.6), (247, 0.4, 1.8)))
+thud = sweep(90, 40, 0.25) * env(0.25, 0.002, 14)
+save("sfx_grave", reverb(mix(thud, toll * 0.6), 0.35), 0.8)
+# Weapon sounds
+d = 0.3; tt = t(d)
+save("sfx_bow", mix(highpass(noise(0.12), 2000) * np.linspace(1, 0, int(0.12 * SR)), sweep(900, 300, 0.2) * env(0.2, 0.001, 18) * 0.5), 0.6)
+save("sfx_axe", mix(lowpass(noise(0.35), 1200) * np.sin(np.linspace(0, math.pi, int(0.35 * SR))), sweep(160, 50, 0.3) * env(0.3, 0.002, 10)), 0.8)
+save("sfx_wand", reverb(sum(np.sin(2 * math.pi * f * tt) * np.exp(-6 * tt) for f in (1320, 1760, 2640)), 0.3), 0.55)
+print("v3 audio built")

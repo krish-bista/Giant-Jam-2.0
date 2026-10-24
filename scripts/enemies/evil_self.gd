@@ -62,11 +62,14 @@ func _build_visuals() -> void:
 func _ready() -> void:
 	super._ready()
 	add_to_group("boss")
-	Events.boss_intro.emit("YOU", "You built me. Every artifact. Every kill.")
-	Events.boss_health_changed.emit("YOU", health, max_health)
-	Voice.say("You built me. Every artifact. Every kill.", "evil")
+
+
+## Called by the final room after your reflection has explained itself.
+func begin() -> void:
+	Events.boss_intro.emit("YOUR REFLECTION", "As long as you fight, I grow.")
+	Events.boss_health_changed.emit("YOUR REFLECTION", health, max_health)
 	Audio.sfx("sfx_boss_roar", 0.0, -6.0, 0.8)
-	await get_tree().create_timer(1.8, false).timeout
+	await get_tree().create_timer(1.6, false).timeout
 	active = true
 
 
@@ -147,7 +150,7 @@ func take_damage(amount: float, source: Node = null) -> void:
 	Juice.fx("cut_x", global_position, 2.4, randf() * TAU, Color(2.0, 0.4, 0.5))
 	_knock = (global_position - (source as Node2D).global_position).normalized() * 120.0 if source is Node2D else Vector2.ZERO
 	health = maxf(1.0, health - amount)
-	Events.boss_health_changed.emit("YOU", health, max_health)
+	Events.boss_health_changed.emit("YOUR REFLECTION", health, max_health)
 	damage = minf(damage * 1.15, _base_damage * 2.5)
 	speed = minf(speed * 1.05, GameManager.stats.speed * 1.2)
 	_aura.amount = mini(80, _aura.amount + 8)
@@ -158,7 +161,7 @@ func take_damage(amount: float, source: Node = null) -> void:
 	heal_tween.tween_interval(0.6)
 	heal_tween.tween_method(func(v: float):
 		health = v
-		Events.boss_health_changed.emit("YOU", health, max_health), health, max_health, 0.8)
+		Events.boss_health_changed.emit("YOUR REFLECTION", health, max_health), health, max_health, 0.8)
 
 
 func _update_visual() -> void:

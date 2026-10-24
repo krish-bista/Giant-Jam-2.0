@@ -127,6 +127,14 @@ func shockwave(world_pos: Vector2, strength := 0.04, duration := 0.45) -> void:
 	_wave_t = 0.0
 
 
+## Negative-image flash (the world reversed for an instant).
+func invert(duration := 0.2) -> void:
+	_screen_mat.set_shader_parameter("invert", 1.0)
+	var t := create_tween()
+	t.set_ignore_time_scale(true)
+	t.tween_method(func(v): _screen_mat.set_shader_parameter("invert", v), 1.0, 0.0, duration)
+
+
 func chroma(amount := 0.012) -> void:
 	_chroma = amount
 	_chroma_t = 0.3

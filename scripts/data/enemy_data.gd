@@ -11,11 +11,20 @@ const TYPES := {
 	"drone": {"sheet": N + "enemies/eye.png", "hp": 20.0, "dmg": 8.0, "speed": 115.0, "range": 34.0, "cd": 1.2,
 		"windup": 0.45, "radius": 14.0, "state": "chase", "float": true, "light": Color(0.7, 0.4, 1.0)},
 	"gunner": {"sheet": N + "enemies/octopus.png", "hp": 25.0, "dmg": 10.0, "speed": 90.0, "range": 300.0, "cd": 2.2,
-		"windup": 0.5, "radius": 14.0, "state": "chase", "ranged": true, "keep": 190.0, "light": Color(0.5, 1.0, 0.4)},
+		"windup": 0.75, "radius": 14.0, "state": "chase", "ranged": true, "keep": 190.0, "light": Color(0.5, 1.0, 0.4)},
 	"raptor": {"sheet": N + "enemies/trex.png", "hunter_sheet": N + "enemies/trex_red.png", "hp": 30.0, "dmg": 10.0,
 		"speed": 200.0, "flee_speed": 140.0, "range": 34.0, "cd": 0.9, "windup": 0.3, "radius": 14.0, "state": "flee"},
 	"brute": {"sheet": N + "enemies/bear.png", "hp": 80.0, "dmg": 18.0, "speed": 150.0, "flee_speed": 75.0,
 		"range": 46.0, "cd": 2.0, "windup": 0.7, "radius": 22.0, "state": "flee", "scale": 4.0},
+	# The Hollow Future (grim world): normal enemies
+	"husk": {"char": N + "enemies/husk", "hp": 30.0, "dmg": 10.0, "speed": 125.0, "range": 34.0, "cd": 1.1,
+		"windup": 0.4, "radius": 14.0, "state": "chase", "light": Color(0.5, 0.3, 0.7)},
+	"wraith": {"sheet": N + "enemies/wraith.png", "hp": 22.0, "dmg": 9.0, "speed": 165.0, "range": 34.0, "cd": 1.0,
+		"windup": 0.35, "radius": 13.0, "state": "chase", "float": true, "light": Color(0.7, 0.3, 1.0)},
+	"seer": {"sheet": N + "enemies/seer.png", "hp": 26.0, "dmg": 11.0, "speed": 80.0, "range": 330.0, "cd": 2.4,
+		"windup": 0.9, "radius": 14.0, "state": "chase", "ranged": true, "keep": 230.0, "float": true, "light": Color(1.0, 0.25, 0.3)},
+	"hollow_brute": {"char": N + "enemies/brute_demon", "hp": 90.0, "dmg": 18.0, "speed": 95.0, "range": 46.0, "cd": 2.0,
+		"windup": 0.8, "radius": 22.0, "state": "chase", "scale": 4.0, "light": Color(0.8, 0.2, 0.3)},
 	"construct": {"char": N + "enemies/robot", "hp": 35.0, "dmg": 12.0, "speed": 300.0, "range": 42.0, "cd": 1.1,
 		"windup": 0.4, "radius": 15.0, "state": "mirror", "light": Color(0.8, 0.3, 1.0)},
 }
@@ -36,5 +45,5 @@ const BOSSES := {
 	"sentinel": {"name": "CORE SENTINEL", "hp": 550.0, "dmg": 12.0, "speed": 210.0, "radius": 46.0, "cd": 1.9,
 		"patterns": ["ring", "swoop", "circle_player", "volley"], "voice": "sentinel",
 		"intro": "You again. You always come back.", "death": "We only wanted somewhere to run.",
-		"summon": ["construct", "construct"], "face": N + "bosses/dragon_faceset.png"},
+		"summon": ["husk", "husk"], "face": N + "bosses/wyrm_faceset.png"},
 }

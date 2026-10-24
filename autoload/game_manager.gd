@@ -26,6 +26,15 @@ var combo := 0
 var best_combo := 0
 var _combo_timer := 0.0
 const COMBO_WINDOW := 2.5
+## Deaths: you leave a grave and revive. 3 deaths = the Reflection (evil) ending; 4+ = rabid.
+const EVIL_AT := 3
+const RABID_AT := 4
+var deaths := 0
+## The current world's special weapon ("" = none). It changes when you enter another world.
+var weapon := ""
+var weapon_world := ""
+var _flip: ColorRect
+var _flip_mat: ShaderMaterial
 
 var _snapshot := {}
 var _switching := false
@@ -44,6 +53,17 @@ func _ready() -> void:
 	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_fade.modulate.a = 0.0
 	layer.add_child(_fade)
+	var flip_layer := CanvasLayer.new()
+	flip_layer.layer = 99
+	add_child(flip_layer)
+	_flip = ColorRect.new()
+	_flip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flip.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_flip_mat = ShaderMaterial.new()
+	_flip_mat.shader = preload("res://assets/shaders/mirror_flip.gdshader")
+	_flip.material = _flip_mat
+	_flip.visible = false
+	flip_layer.add_child(_flip)
 	_detect_start_scene.call_deferred()
 	if OS.get_environment("ECHO_BOT") == "1":
 		var bot: Node = load("res://tools/playtest_bot.gd").new()
@@ -107,19 +127,37 @@ func reset_run() -> void:
 	run_time = 0.0
 	combo = 0
 	best_combo = 0
+	deaths = 0
+	weapon = ""
+	weapon_world = ""
 
 
-## The one scene switch everybody uses.
-func go_to_scene(scene_name: String) -> void:
+func sanity() -> int:
+	return maxi(0, EVIL_AT - deaths)
+
+
+func is_rabid() -> bool:
+	return deaths >= RABID_AT
+
+
+func ending_type() -> String:
+	return "evil" if deaths >= EVIL_AT else "divine"
+
+
+## The one scene switch everybody uses. transition: "fade" or "mirror" (the reversal flip).
+func go_to_scene(scene_name: String, transition := "fade") -> void:
 	if _switching or not SCENES.has(scene_name):
 		if not SCENES.has(scene_name):
 			push_error("Unknown scene: " + scene_name)
 		return
 	_switching = true
 	input_locked = true
-	var t := create_tween()
-	t.tween_property(_fade, "modulate:a", 1.0, 0.35)
-	await t.finished
+	if transition == "mirror":
+		await _mirror_out()
+	else:
+		var t := create_tween()
+		t.tween_property(_fade, "modulate:a", 1.0, 0.35)
+		await t.finished
 	Engine.time_scale = 1.0
 	Juice.reset_time()
 	Voice.stop()
@@ -132,8 +170,40 @@ func go_to_scene(scene_name: String) -> void:
 	_take_snapshot()
 	input_locked = false
 	_switching = false
+	if transition == "mirror":
+		_mirror_in()
+	else:
+		var t2 := create_tween()
+		t2.tween_property(_fade, "modulate:a", 0.0, 0.35)
+
+
+## The world flips into its own reflection, collapses to a bright seam, and goes white.
+func _mirror_out() -> void:
+	Audio.sfx("sfx_hypno_reverse", 0.0, -2.0)
+	Audio.sfx("sfx_portal", 0.0, -4.0)
+	_flip_mat.set_shader_parameter("progress", 0.0)
+	_flip.visible = true
+	var t := create_tween()
+	t.set_ignore_time_scale(true)
+	t.tween_method(func(v): _flip_mat.set_shader_parameter("progress", v), 0.0, 1.0, 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await t.finished
+	_fade.color = Color(0.85, 0.97, 1.0)
 	var t2 := create_tween()
-	t2.tween_property(_fade, "modulate:a", 0.0, 0.35)
+	t2.set_ignore_time_scale(true)
+	t2.tween_property(_fade, "modulate:a", 1.0, 0.15)
+	await t2.finished
+
+
+## The new world starts mirrored and turns the right way round.
+func _mirror_in() -> void:
+	_flip_mat.set_shader_parameter("progress", 1.0)
+	var t := create_tween()
+	t.set_ignore_time_scale(true)
+	t.tween_property(_fade, "modulate:a", 0.0, 0.2)
+	t.tween_method(func(v): _flip_mat.set_shader_parameter("progress", v), 1.0, 0.0, 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_callback(func():
+		_flip.visible = false
+		_fade.color = Color.BLACK)
 
 
 ## Game over -> restart the current scene with the state you entered it with.

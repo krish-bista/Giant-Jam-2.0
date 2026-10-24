@@ -1,137 +1,72 @@
-# Echo Breach — All Game Text
+# Echo Breach — Story and Script
 
-Tone: mysterious, short lines, no exposition dumps. Every line fits on one line of the dialogue box (≤ 60 characters).
-Each block has an **id** so code can find it. Krish: copy the lines as `Array[String]` into `Events.dialogue_requested.emit([...])` or `Events.tutorial_prompt.emit("...")`.
-`[E]`, `[Q]` etc. are the input actions from `INTERFACES.md`.
+Every line below is voiced (`tools/asset_scripts/voice_lines.json`). Tone: mysterious, short lines.
+
+## The story in one breath
+Something broke time, and now it runs **backwards, like a reflection in a mirror**. In a reversed world the hunter becomes the hunted and every blow comes back to the one who struck it. You wake with no memory; a Stranger gives you a helmet that lets you walk the broken timelines back to the crack. In the end you learn **you** made the crack: the "aliens" are survivors of the future you caused, fleeing into the past. At the heart of the breach waits your **reflection**, made of every enemy you cut down and every artifact you took. It grows as long as you fight. The crack closes only when the one who made it is gone.
+
+**Reversal everywhere:** the Mirror Shield returns attacks; Hypno Reverse turns enemies and their bolts back on them; in the jungle the hunter becomes the hunted; the aliens are really refugees; your reflection fights *with* you in every world and *against* you at the end; you win by losing.
+
+**Death:** an echo can't die, it only repeats. Each death leaves a grave and you revive, but every return leaves less of you and more of your reflection. Sanity has 3 points. At 0 the Reflection ending is locked in; one more death and you go **rabid**.
 
 ---
 
-## 1. Amnesia room — `amnesia_room`
-
-**`wake`** (player thought, shown when the scene starts)
-- ...
-- Where am I?
-
-**`npc_lore`** (talk to the NPC with `[E]`)
+## Amnesia room — Stranger
 1. You're awake. Good. Don't try to remember. Not yet.
-2. Three days ago the sky cracked open. They came through.
-3. Time is breaking. The pieces are scattered across it.
-4. Only you can walk between them. Don't ask me why.
-5. Put this on.
+2. Something broke time. Now it runs backwards, like a reflection in a mirror.
+3. In a reversed world the hunter becomes the hunted, and every blow comes back to the one who struck it.
+4. This helmet lets you walk the broken timelines, back to the moment it all cracked.
+5. Find the crack. Close it. Whatever it costs.
+6. Put this on.
 
-**`npc_repeat`** (talking to the NPC again)
-- The helmet. Please.
+## The Simulation — Wise Elder
+- Welcome to the simulation, traveler. I am the Wise Elder.
+- Nothing here is real, and nothing here can truly hurt you.
+- I can train you. Or, if your hands still remember, I can send you straight on.
+- **Will you train with me?** → *Train with me* / *Skip training*
+- Train: "Good. Patience is a blade too." (move, sword, 3-hit spin, crates & red barrels, shield, block, reflect)
+- Skip: "Very well. Take the Divine Sword and the Mirror Shield."
+- Both: "Remember one thing. A mirror returns what it is given. Strike your reflection, and you strike yourself."
+- "Go. The first broken timeline is waiting."
 
-**Prompts**
-- `prompt_talk`: [E] Talk
-- `prompt_helmet`: [E] Put on the helmet
-- `door_locked`: The door doesn't open. Not from this side.
+## World 1 — THE FALLEN CITY (the present day)
+- Narrator: The Fallen City. The present day, three days after the sky cracked.
+- Reflection (ally): I'm your reflection. The part of you that still wants to save them. Let's go.
+- You: They came through the cracks. Hold the line.
+- Lore: *Evacuation notice: the creatures are not attacking. They are running.* / *Day three. The lights in the sky look like campfires.*
+- Bosses: the Hypnotic ("Look at me. Closer. ...Which way is up now?"), the Warden ("Hold the portal. Whatever it costs." / "...It's already too late for us.")
+- Weapon: **Flare Bow** — "A Flare Bow. Arrows made of light."
 
----
+## World 2 — THE FIRST HUNT (ten thousand years ago)
+- Narrator: The First Hunt. Ten thousand years ago.
+- You: Here, I'm the stranger. Everything runs from me. → (the pack turns) Now I'm the prey.
+- Lore: *The first hunter was afraid too.*
+- Boss: the Alpha. Weapon: **Hunter's Axe** — "A Hunter's Axe. Heavy. Honest."
 
-## 2. Tutorial (VR box world) — `tutorial`
+## World 3 — THE HOLLOW FUTURE (the world you made, the grim one)
+- Narrator: The Hollow Future. The world you made.
+- You: This is what's left. This is what I did.
+- **Refugee log:** The breach opened here. The one who made it carried a mirror. / We fled into the past. To them, we look like invaders. / His reflection never left. It waits at the heart of the breach.
+- Lore: *They crossed time to escape this. In your story, they became the invaders.* / *Every mirror here faces the past.*
+- Boss: Core Sentinel ("You again. You always come back." / "We only wanted somewhere to run.")
+- Weapon: **Echo Wand** — "It hums with a future that shouldn't exist."
 
-Shown one at a time with `Events.tutorial_prompt`. Advance when the player does the action.
+## The final mirror — your reflection
+Panels: The last fragment shows only you. / It moves first. / Everything you took, it took too. / Only one of you leaves. Neither of you can win.
+- Finally. You walked all the way back to me.
+- I am your reflection. Every enemy you cut down, every artifact you took. I am made of all of it.
+- You broke time trying to win. The breach feeds on that. It feeds me.
+- As long as you fight, I grow. You can't outfight yourself.
+- (taunts) Again. / Stronger. Thank you. / Every hit feeds me. / There's only one way this ends.
+- Stranger: The crack closes only when the one who made it is gone. → **[E] Turn the blade on yourself.**
+- Divine: "A mirror returns what it is given. You gave it everything."
+- Reflection (3+ deaths): "Too late. You died too many times. There's more of me in you than you."
 
-| id | Text | Advance when |
-|---|---|---|
-| `tut_enter` | Calibrating... Nothing here can hurt you. Yet. | 2.5s timer |
-| `tut_move` | WASD to move. Space to dash. | Player moved + dashed once |
-| `tut_take_sword` | [E] Take the Divine Sword | Sword picked up |
-| `tut_attack` | Left click to strike. Aim with the mouse. | Dummy hit 3 times |
-| `tut_take_shield` | [E] Take the Mirror Shield | Shield picked up |
-| `tut_block` | Hold right click to block. | Blocked 1 dummy hit |
-| `tut_reflect` | Block just as it lands. The mirror sends it back. | 2 perfect reflects |
-| `tut_reflect_count` | Reflected %d / 2 | (counter under the prompt) |
-| `tut_fragment` | A shard of a broken timeline. Step through. | Player enters the fragment |
+## Endings
+- **DIVINE:** The mirror is quiet. / Time turns forward again. Somewhere ahead, a sky stays whole. / No one will remember you. / That was the point.
+- **REFLECTION:** The mirror smiles. / Your reflection walks out into the world, wearing your face. / The breach never closes. It only grows. / Somewhere, someone is running from you.
 
-`tut_good` (flash briefly after each step): **Good.**
-
----
-
-## 3. World prompts
-
-**World 1 — city**
-- `w1_enter`: The city. Before it fell. Or after.
-- `w1_wave`: Wave %d
-- `hypno_unlock`: Hypno Reverse unlocked. [Q] Turn them on each other.
-- `w1_portal`: The portal holds. Go.
-
-**World 2 — jungle**
-- `w2_enter`: They run from you. Hunt them.
-- `w2_flip`: The pack has turned. Survive.
-- `w2_survived`: The hunt is over. Take what you earned.
-- `w2_portal`: Go before they remember you.
-
-**World 3 — alien core**
-- `w3_enter`: They move as you move.
-- `w3_hint`: Make them strike each other.
-- **`w3_twist`** (THE twist hint, scratched into a wall near the arena entrance, or a terminal the player walks past):
-  - *We crossed time to escape the future he made.*
-
-**After boss 3** — `final_choice`
-- The last fragment is waiting.
-- `[E] Enter the final fragment` / `Keep fighting`
-
----
-
-## 4. Boss intros
-
-Shown as a name banner + 1–2 lines while the boss's telegraph circle fades in. Keep each under 2 seconds to read.
-
-| Boss | Banner | Intro lines | Death line |
-|---|---|---|---|
-| Hypnotic (mini) | THE HYPNOTIC | Look at me. Closer. / ...Which way is up now? | You'll see it too. Soon. |
-| Warden (alien commander) | THE WARDEN | Hold the portal. Whatever it costs. | ...It's already too late for us. |
-| Alpha Rex | ALPHA REX | *(no speech — a roar)* / The jungle remembers its first intruder. | *(roar fades)* |
-| Core Sentinel | CORE SENTINEL | You again. You always come back. | We only wanted somewhere to run. |
-| Evil You | **YOU** | You built me. Every artifact. Every kill. | *(none — see ending)* |
-
-**Evil You taunts** (one shows each time the player hits it, cycle in order)
-1. Again.
-2. Stronger. Thank you.
-3. You can't outfight yourself.
-4. Every hit feeds me.
-5. There's only one way this ends.
-
-**Self-kill prompt** (appears after 20s, or 5 hits on Evil You, or player below 30% health)
-- `final_prompt`: [E] Turn the blade on yourself.
-
----
-
-## 5. Final cutscene — 4 static panels (before the final boss)
-
-Each panel stays ~3s, text fades in at the bottom. Click/`[E]` skips to the next one.
-
-| Panel (Nischal's file) | Image | Text |
-|---|---|---|
-| `cut_final_01.png` | The player stands in front of a huge cracked mirror. Black room, silver edges. | The last fragment shows only you. |
-| `cut_final_02.png` | Close-up: the reflection smiles. The player does not. | It moves first. |
-| `cut_final_03.png` | The reflection steps out, red and black, carrying every artifact. | Everything you took, it took too. |
-| `cut_final_04.png` | Both stand face to face, swords raised. Red light between them. | Only one of you leaves. Neither of you can win. |
-
----
-
-## 6. Ending — `ending`
-
-After the self-kill: slowdown → mirror shatters → fade to white → black screen, `cut_ending.png` behind the text.
-Lines fade in one at a time, 2.5s apart. No music, just the room tone.
-
-1. The mirror is quiet.
-2. Somewhere ahead, a sky stays whole.
-3. No one will remember you.
-4. That was the point.
-
-*(pause 3s)*
-
-**ECHO BREACH**
-*Krish · Nischal · Azad*
-
----
-
-## 7. Other screens
-
-- `game_over`: The echo fades. / [E] Try again
-- `pause`: Paused / [Esc] Resume
-- `artifact_popup`: **{name}** — {desc} (names and descriptions in `balance/5_artifacts.tsv`)
-- Ability icon tooltips (optional): Divine Sword · Mirror Shield · Hypno Reverse · Dash
+## Deaths
+- 1st: "An echo can't die. It only repeats." / "But every return leaves less of you, and more of your reflection."
+- 3rd: "Careful. There's more reflection in you than you now."
+- 4th: SANITY LOST — "Something's wrong with me... I can't stop." The ally: "I can't follow you anymore. You're becoming the other one."

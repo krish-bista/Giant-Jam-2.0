@@ -19,6 +19,7 @@ var _jitter := Vector2.ZERO
 var _done := false
 var _artifacts_logged := 0
 var _used_once := {}
+var _special_t := 0.0
 var _shot_t := 3.0
 var _shot_n := 0
 
@@ -26,11 +27,15 @@ var _shot_n := 0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	print("[BOT] started")
+	if OS.get_environment("ECHO_BOT_SET_DEATHS") != "":
+		GameManager.deaths = int(OS.get_environment("ECHO_BOT_SET_DEATHS"))
 	Events.player_died.connect(func():
 		print("[BOT] damage so far: ", hurt_log)
 		deaths += 1
 		print("[BOT] DIED in %s at %.1fs (deaths: %d)" % [GameManager.current_scene, GameManager.run_time, deaths]))
 	Events.boss_intro.connect(func(n, _l): print("[BOT] boss intro: %s at %.1fs" % [n, GameManager.run_time]))
+	Events.weapon_changed.connect(func(w): if w != "": print("[BOT] weapon: %s" % w))
+	Events.player_revived.connect(func(d): print("[BOT] revived (deaths %d) in %s" % [d, GameManager.current_scene]))
 	Events.tutorial_prompt.connect(func(t): if t != "": print("[BOT] prompt: %s (t=%.1f)" % [t, GameManager.run_time]))
 	Events.artifact_picked.connect(func(a): print("[BOT] artifact: %s" % a.name))
 	Events.enemy_killed.connect(func(e): if e.is_in_group("boss"): print("[BOT] boss down: %s at %.1fs" % [e.boss_name, GameManager.run_time]))
@@ -65,6 +70,14 @@ func _move(dir: Vector2) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var shots := OS.get_environment("ECHO_BOT_SHOTS")
+	if shots != "":
+		_shot_t -= delta
+		if _shot_t <= 0.0:
+			_shot_t = float(OS.get_environment("ECHO_BOT_SHOT_EVERY")) if OS.get_environment("ECHO_BOT_SHOT_EVERY") != "" else 9.0
+			_shot_n += 1
+			var img := get_viewport().get_texture().get_image()
+			img.save_png("%s/shot_%03d_%s.png" % [shots, _shot_n, GameManager.current_scene])
 	if _done:
 		return
 	var scene := GameManager.current_scene
@@ -82,14 +95,7 @@ func _physics_process(delta: float) -> void:
 		_done = true
 		get_tree().quit(1)
 		return
-	var shots := OS.get_environment("ECHO_BOT_SHOTS")
-	if shots != "":
-		_shot_t -= delta
-		if _shot_t <= 0.0:
-			_shot_t = float(OS.get_environment("ECHO_BOT_SHOT_EVERY")) if OS.get_environment("ECHO_BOT_SHOT_EVERY") != "" else 9.0
-			_shot_n += 1
-			var img := get_viewport().get_texture().get_image()
-			img.save_png("%s/shot_%03d_%s.png" % [shots, _shot_n, scene])
+	_special_t -= delta
 	_tap_t -= delta
 	_attack_t -= delta
 	_hypno_t -= delta
@@ -108,6 +114,10 @@ func _physics_process(delta: float) -> void:
 			_tap_t = 0.35
 			_tap("interact")
 		return
+	# Test hook: die N times in world1 (graves, revives, sanity, rabid, Reflection ending).
+	var want_deaths := int(OS.get_environment("ECHO_BOT_DIE")) if OS.get_environment("ECHO_BOT_DIE") != "" else 0
+	if p and scene == "world1" and GameManager.deaths < want_deaths and not p.is_dead() and p._iframes_left <= 0.0 and GameManager.run_time - _scene_start > 12.0:
+		p.take_damage(9999.0, null)
 	if p and OS.get_environment("ECHO_BOT_GOD") == "1" and not p.is_dead() and p.health < p.max_health * 0.5:
 		p.heal(p.max_health, false)
 	if p and not p.hurt.is_connected(_on_hurt):
@@ -182,6 +192,14 @@ func _physics_process(delta: float) -> void:
 			target = enemy
 			want = 30.0 + (enemy.radius if "radius" in enemy else 14.0)
 
+	# World weapon pickups (when the area is clear)
+	if target == null:
+		for n in root.get_children():
+			if n is WeaponPickup and not n._taken:
+				target = n
+				want = 0.0
+				break
+
 	# Interactables (skip the door, the table and "keep fighting").
 	if target == null:
 		for n in root.get_children():
@@ -226,6 +244,11 @@ func _physics_process(delta: float) -> void:
 	if enemy and to_t.length() < want + 30.0 and _attack_t <= 0.0 and _block_left <= 0.0:
 		_attack_t = 0.2
 		_tap("attack")
+
+	# World weapon when enemies are close
+	if GameManager.weapon != "" and enemy and to_t.length() < 260.0 and _special_t <= 0.0:
+		_special_t = 1.0
+		_tap("special")
 
 	# Hypno when a few enemies are in front.
 	if GameManager.hypno_unlocked and _hypno_t <= 0.0:
@@ -308,9 +331,9 @@ func _find_ui(root: Node) -> GameUI:
 func _finish_after_ending() -> void:
 	_done = true
 	_move(Vector2.ZERO)
-	await get_tree().create_timer(4.0, true, false, true).timeout
+	await get_tree().create_timer(float(OS.get_environment("ECHO_BOT_ENDING_WAIT")) if OS.get_environment("ECHO_BOT_ENDING_WAIT") != "" else 4.0, true, false, true).timeout
 	print("[BOT] ===== RUN COMPLETE =====")
-	print("[BOT] total time %.1fs, deaths %d, artifacts %s" % [GameManager.run_time, deaths, str(GameManager.artifacts)])
+	print("[BOT] total time %.1fs, deaths %d, ending %s, artifacts %s" % [GameManager.run_time, deaths, GameManager.ending_type(), str(GameManager.artifacts)])
 	for k in scene_times:
 		print("[BOT]   %-13s %.1fs" % [k, scene_times[k]])
 	get_tree().quit(0)
