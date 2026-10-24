@@ -38,6 +38,7 @@ Change numbers in the sheet first, then update this folder so the team sees the 
 | world1 | Alien Gunner | 25 | 10 | 90 | 260 | 2.0 | 0.5 | Keeps ~150px away, fires a 220px/s bolt (reflectable) | 3 |
 | world2 | Raptor (prey) | 30 | 12 | 150 | 30 | 1.0 | 0.35 | Flees at 140 px/s while the hunt meter is filling; player catches it with dash | 3 |
 | world2 | Raptor (hunter) | 30 | 10 | 200 | 30 | 0.9 | 0.3 | Pack flips for 10s: fast, chases the player | 3 |
+| world2 | Brute (mammoth-type) | 80 | 18 | 80 | 40 | 2.2 | 0.8 | Slow, flees slowly while prey; when flipped it charges (red line telegraph). Optional: cut first if late | 8 |
 | world3 | Mirror Construct | 35 | 12 | = player speed | 36 | 1.0 | 0.3 | Copies player movement mirrored across the center line; attacks when close | 4 |
 
 ## Waves
@@ -48,8 +49,8 @@ Change numbers in the sheet first, then update this folder so the team sees the 
 | world1 | 2 | 18 | 5 Drone + 2 Gunner | 0.6 | All dead + 3s | 25 |
 | world1 | 3 | 46 | 4 Drone + 3 Gunner | 0.5 | All dead + 3s | 25 |
 | world1 | Mini boss | 74 | Hypnotic | - | Dead -> unlock Hypno Reverse, prompt | 30 |
-| world1 | Boss | 110 | Warden | - | Dead -> portal opens | 60 |
-| world2 | Hunt | 0 | 5 Raptor (prey) | all at once | Hunt meter hits 100 | 30 |
+| world1 | Boss | 110 | Warden (alien commander) | - | Dead -> portal opens | 60 |
+| world2 | Hunt | 0 | 5 Raptor (prey) + 1 Brute | all at once | Hunt meter hits 100 | 30 |
 | world2 | Flip | 30 | same 5 Raptors become hunters | - | Survive 10s -> reward | 10 |
 | world2 | Boss | 45 | Alpha Rex | - | Dead -> portal opens | 60 |
 | world3 | Mirror 1 | 0 | 3 Mirror Construct | all at once | All dead | 20 |
@@ -66,9 +67,9 @@ Change numbers in the sheet first, then update this folder so the team sees the 
 |---|---|---|---|---|---|---|---|---|---|---|
 | world1 | Hypnotic (mini) | 150 | 10 | 90 | Hypno pulse: reverses player controls 3s | 1.0 | 0 | 10 | - | 30 |
 | world1 | Hypnotic (mini) |  |  |  | Orb volley: 3 slow bolts | 0.5 | 10 | 3 |  |  |
-| world1 | Warden | 400 | 12 | 100 | Laser sweep (red line) | 1.0 | 18 | 5 | Summons 3 Drones once; attacks 20% faster | 60 |
-| world1 | Warden |  |  |  | Charge across arena | 0.8 | 15 | 6 |  |  |
-| world2 | Alpha Rex | 500 | 14 | 130 | Charge (red line) | 0.8 | 20 | 5 | Roar summons 2 Raptors; charge twice in a row | 60 |
+| world1 | Warden (alien commander) | 400 | 12 | 100 | Laser sweep (red line) | 1.0 | 18 | 5 | Summons 3 Drones once; attacks 20% faster | 60 |
+| world1 | Warden (alien commander) |  |  |  | Charge across arena | 0.8 | 15 | 6 |  |  |
+| world2 | Alpha Rex | 500 | 14 | 130 | Charge (red line) | 0.8 | 20 | 5 | Swaps chase/flee every 6s: while fleeing it takes +50% damage, while chasing it charges twice in a row; roar summons 2 Raptors once | 60 |
 | world2 | Alpha Rex |  |  |  | Tail sweep (red circle r=80) | 0.6 | 15 | 4 |  |  |
 | world3 | Core Sentinel | 550 | 15 | 80 | Bullet ring: 12 bolts (reflectable) | 0.7 | 12 | 4 | Ring fires 2x; spawns 1 mirror clone of itself (50 hp) | 45 |
 | world3 | Core Sentinel |  |  |  | Ground circle (r=70) under player | 1.0 | 22 | 5 |  |  |

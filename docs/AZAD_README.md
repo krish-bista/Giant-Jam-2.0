@@ -8,6 +8,9 @@
   - Input actions: WASD move, `attack` left mouse, `block` right mouse, `dash` Space, `hypno` Q, `interact` E, `pause` Esc
   - Physics layers 1–8 named: world, player, enemy, player_attack, enemy_attack, pickup, portal, flipped_attack
 - **Repo hygiene**: `.gitattributes` (same line endings on every machine) and an extended `.gitignore`.
+- **Game theme**: [GAME_THEME.md](GAME_THEME.md). The full design: story, worlds, kit, roles, schedule, cut list.
+- **All game text**: [DIALOGUE.md](DIALOGUE.md). Amnesia room lore, tutorial prompts, world prompts, boss intros, the World 3 twist line, final cutscene, ending. Each block has an id.
+- **Sound effects**: 13 placeholder sounds in `audio/sfx/` (swing, hit, block, reflect, portal, pickup, boss roar, and more) plus `Music` / `SFX` audio buses. How to play them and where each one goes: [AUDIO.md](AUDIO.md).
 
 ## What I need from you
 - **Everyone:** use **Godot 4.7.2 stable**. A different version re-saves files and creates conflicts.
