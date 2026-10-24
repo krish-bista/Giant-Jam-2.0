@@ -1,9 +1,9 @@
 World	Boss	health	damage (contact)	speed (px/s)	Attack	Telegraph (s)	Attack damage	Cooldown (s)	Phase 2 (at 50% hp)	Target fight length (s)
 world1	Hypnotic (mini)	150	10	90	Hypno pulse: reverses player controls 3s	1.0	0	10	-	30
 world1	Hypnotic (mini)				Orb volley: 3 slow bolts	0.5	10	3		
-world1	Warden	400	12	100	Laser sweep (red line)	1.0	18	5	Summons 3 Drones once; attacks 20% faster	60
-world1	Warden				Charge across arena	0.8	15	6		
-world2	Alpha Rex	500	14	130	Charge (red line)	0.8	20	5	Roar summons 2 Raptors; charge twice in a row	60
+world1	Warden (alien commander)	400	12	100	Laser sweep (red line)	1.0	18	5	Summons 3 Drones once; attacks 20% faster	60
+world1	Warden (alien commander)				Charge across arena	0.8	15	6		
+world2	Alpha Rex	500	14	130	Charge (red line)	0.8	20	5	Swaps chase/flee every 6s: while fleeing it takes +50% damage, while chasing it charges twice in a row; roar summons 2 Raptors once	60
 world2	Alpha Rex				Tail sweep (red circle r=80)	0.6	15	4		
 world3	Core Sentinel	550	15	80	Bullet ring: 12 bolts (reflectable)	0.7	12	4	Ring fires 2x; spawns 1 mirror clone of itself (50 hp)	45
 world3	Core Sentinel				Ground circle (r=70) under player	1.0	22	5		
