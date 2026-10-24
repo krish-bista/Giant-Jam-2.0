@@ -1,0 +1,26 @@
+# Same line endings on every machine, so Windows/Mac don't produce fake diffs
+* text=auto eol=lf
+
+# Godot text resources
+*.gd     text eol=lf
+*.tscn   text eol=lf
+*.tres   text eol=lf
+*.godot  text eol=lf
+*.import text eol=lf
+*.uid    text eol=lf
+*.cfg    text eol=lf
+*.md     text eol=lf
+*.tsv    text eol=lf
+
+# Binary assets: never diff or merge
+*.png  binary
+*.jpg  binary
+*.webp binary
+*.svg  text eol=lf
+*.wav  binary
+*.ogg  binary
+*.mp3  binary
+*.ttf  binary
+*.otf  binary
+*.aseprite binary
+*.psd  binary

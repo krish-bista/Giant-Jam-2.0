@@ -1,0 +1,12 @@
+Segment	Target time	Cumulative	What happens	Player power on entry (approx dmg / max hp)
+amnesia_room	0:30	0:30	Wake, NPC lore drop, 'put this on'	10 / 100
+tutorial	2:30	3:00	Get sword: attack dummy. Get shield: block, then reflect. Enter fragment.	10 / 100
+world1	3:00	6:00	3 waves, Hypnotic, Warden	10 / 100
+world2	2:00	8:00	Hunt, flip, Alpha Rex	~13 / 125
+world3	1:30	9:30	Mirror constructs, Core Sentinel, twist line	~16 / 125
+final	1:00	10:30	Evil You, self-kill	~19 / 150
+ending	0:20	10:50	Quiet text, credits	-
+				
+Check	Boss TTK		Boss hp / (player dmg x ~1.5 hits/s). Warden 400/(10x1.5)=27s of hitting, ~60s with dodging	
+Check	If playtest runs long		Cut enemy hp by 20% first, then remove the last wave	
+Check	If playtest runs short		Add 1 enemy per wave; bosses +15% hp	

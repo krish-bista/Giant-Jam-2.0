@@ -1,0 +1,11 @@
+Priority (cut after 6)	id	Name	Rarity	Effect	mods	flag	Available from
+1	edge_shard	Edge Shard	common	+3 damage	damage:+3		anywhere
+2	heart_fragment	Heart Fragment	common	+25 max health (also heals 25)	max_health:+25		anywhere
+3	quick_sigil	Quick Sigil	common	+15% speed	speed:+33		anywhere
+4	mirror_polish	Mirror Polish	rare	Reflected damage +50%	reflect_power:+0.5		anywhere
+5	blood_echo	Blood Echo	rare	25% of damage taken heals you back after 2s		heal_on_hurt	anywhere
+6	double_reflection	Double Reflection	epic	Reflected damage hits twice		double_reflect	boss drop only
+7	hypno_lens	Hypno Lens	rare	Hypno Reverse lasts +3s		long_hypno	after world1
+8	lucky_coin	Lucky Coin	common	+10 luck	luck:+10		anywhere
+9	echo_blade	Echo Blade	rare	Every 4th swing deals double damage		echo_blade	anywhere
+10	glass_heart	Glass Heart	epic	+8 damage, -20 max health	damage:+8, max_health:-20		anywhere

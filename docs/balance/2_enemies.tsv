@@ -1,0 +1,7 @@
+World	Enemy	health	damage	speed (px/s)	Attack range (px)	Attack cooldown (s)	Windup / telegraph (s)	Behaviour	Hits to kill (base dmg 10)
+tutorial	Training Dummy	30	5	0	40	2.0	0.6	Stands still, swings slowly so the player practices blocking	3
+world1	Drone	20	8	110	28	1.2	0.4	Chases, melee bump	2
+world1	Alien Gunner	25	10	90	260	2.0	0.5	Keeps ~150px away, fires a 220px/s bolt (reflectable)	3
+world2	Raptor (prey)	30	12	150	30	1.0	0.35	Flees at 140 px/s while the hunt meter is filling; player catches it with dash	3
+world2	Raptor (hunter)	30	10	200	30	0.9	0.3	Pack flips for 10s: fast, chases the player	3
+world3	Mirror Construct	35	12	= player speed	36	1.0	0.3	Copies player movement mirrored across the center line; attacks when close	4

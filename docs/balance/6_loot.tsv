@@ -1,0 +1,10 @@
+Source	Artifact chance	Common	Rare	Epic	Health orb chance	Notes
+Normal enemy	3% + luck%	70%	25%	5%	15%	~40 enemies total, so ~1 random artifact per run
+World chest (1 per world)	100%	50%	40%	10%	-	Place near the arena edge
+Hypnotic mini boss	100%	0%	100% (hypno_lens)	0%	100%	Fixed drop: Hypno Lens
+Hunt reward (world2)	100%	0%	100%	0%	-	
+Timeline boss	100%	0%	60%	40%	100%	Double Reflection only drops here
+						
+Rule	Luck shifts rarity	-luck	+luck/2	+luck/2		e.g. luck 10 on a normal enemy -> 60/30/10
+Rule	No duplicates					Re-roll if already owned; if all owned, drop a health orb
+Expected total	~7 artifacts by the final					3 chests + mini boss + hunt + 3 bosses = 8 guaranteed. Fine with 6 if cut.
