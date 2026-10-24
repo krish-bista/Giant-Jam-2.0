@@ -23,8 +23,10 @@ var _dash_time_left: float = 0.0
 var _dash_cooldown_left: float = 0.0
 var _dash_requested: bool = false
 var _dead: bool = false
+var _attack_requested: bool = false
 
 @onready var _visual: Polygon2D = $Visual
+@onready var _sword = $DivineSword
 
 func _ready() -> void:
     health = max_health
@@ -34,9 +36,18 @@ func _unhandled_key_input(event: InputEvent) -> void:
     if event is InputEventKey and event.physical_keycode == KEY_SPACE and event.pressed and not event.echo:
         _dash_requested = true
 
+func _unhandled_input(event: InputEvent) -> void:
+    if event.is_action_pressed("attack"):
+        _attack_requested = true
+
 func _physics_process(delta: float) -> void:
     _update_facing()
     _dash_cooldown_left = maxf(0.0, _dash_cooldown_left - delta)
+
+    if _attack_requested:
+        _attack_requested = false
+        if not _dead:
+            _sword.try_attack(facing_direction, damage, self)
 
     if _dead:
         velocity = Vector2.ZERO
