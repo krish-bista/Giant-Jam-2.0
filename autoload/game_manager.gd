@@ -2,6 +2,7 @@ extends Node
 ## Scene flow + run state that survives scene changes (stats, artifacts, unlocks).
 
 const SCENES := {
+	"title": "res://scenes/levels/title.tscn",
 	"amnesia_room": "res://scenes/levels/amnesia_room.tscn",
 	"tutorial": "res://scenes/levels/tutorial.tscn",
 	"world1": "res://scenes/levels/world1.tscn",
@@ -156,7 +157,7 @@ func go_to_scene(scene_name: String, transition := "fade") -> void:
 	input_locked = true
 	if transition == "mirror":
 		await _mirror_out()
-	elif transition == "shatter":
+	elif transition == "shatter" and DisplayServer.get_name() != "headless":
 		await _shatter_out()
 	else:
 		var t := create_tween()
@@ -176,7 +177,7 @@ func go_to_scene(scene_name: String, transition := "fade") -> void:
 	_switching = false
 	if transition == "mirror":
 		_mirror_in()
-	elif transition == "shatter":
+	elif transition == "shatter" and DisplayServer.get_name() != "headless":
 		_shatter_in()
 	else:
 		var t2 := create_tween()

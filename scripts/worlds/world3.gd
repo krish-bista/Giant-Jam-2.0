@@ -4,61 +4,73 @@ extends Level
 ## Two waves -> Core Sentinel, against a 1:40 clock. Then: keep fighting, or the final mirror.
 ## World weapon: Echo Wand.
 
-const HEART := Vector2(1296, 720)   # the center: the mirror opens here
+const HEART := CityLayout.PLAZA     # the center: the mirror opens here
 const CLOCK := 100.0
+var _terminal: Interactable
 const WAVES := [
 	["husk", "husk", "wraith", "seer", "husk"],
-	["hollow_brute", "seer", "wraith", "husk", "husk"],
+	["hollow_brute", "seer", "wraith", "husk", "seer", "wraith"],
 ]
 
 
 func configure() -> void:
 	world_size = Vector2(2592, 1440)
+	arena_override = Rect2(70, 190, 2452, 1120)
 	ground = "res://assets/ninja/ground/grim.png"
 	music = "music_grim"
 	boss_music = "music_core_boss"
 	ambient = "amb_wind"
 	surface = "stone"
-	ambient_color = Color(0.82, 0.72, 0.86)
+	ambient_color = Color(0.86, 0.8, 0.82)
 	particles = "ash"
 	vignette = 0.55
-	desaturate = 0.25
-	screen_tint = Color(1.05, 0.92, 0.95)
-	spawn_point = Vector2(700, 760)
+	desaturate = 0.2
+	screen_tint = Color(1.04, 0.95, 0.94)
+	# The city reflected: you come in through the east gate this time.
+	spawn_point = Vector2(2290, 720)
 
 
 func build_world() -> void:
-	keepout(HEART, 340.0)
-	place_weapon("echo_wand", Vector2(960, 1010))
-	border(["grim_tree_dead", "grim_pillar", "grim_rocks_grey", "grim_boulder_grey", "grim_ruin_wall"], 160.0, 1)
-	scatter(["grim_tree_dead", "grim_pillar_broken", "grim_statue_orb", "grim_head_statue", "grim_gem_rock"], 22, Rect2(160, 160, 2270, 1120), {}, 24.0)
-	scatter(["grim_grave", "grim_crystal_purple"], 40, Rect2(160, 160, 2270, 1120), {"collide": false}, 6.0)
-	# Sickly, flickering lights
-	for pos in [Vector2(420, 380), Vector2(900, 1180), Vector2(1700, 320), Vector2(2150, 900), Vector2(1300, 260), Vector2(500, 1120), Vector2(1950, 1260)]:
-		var l := Sheet.make_light(Color(1.0, 0.25, 0.3) if randf() < 0.5 else Color(0.6, 0.3, 0.9), 1.4, 3.0)
-		l.position = pos
-		l.set_meta("base", 1.4)
+	keepout(Vector2(spawn_point.x - 200, 720), 120.0)
+	CityLayout.build(self, true)
+	# Where the refugee camp was, there are only graves now (mirrored to the south-east).
+	for pos in [Vector2(2040, 1010), Vector2(2110, 1040), Vector2(2180, 1010), Vector2(2250, 1040), Vector2(2320, 1010),
+			Vector2(2075, 1110), Vector2(2145, 1140), Vector2(2215, 1110), Vector2(2285, 1140)]:
+		prop("grim_grave", pos, {"collide": false})
+	prop("grim_tent_torn", Vector2(2180, 1196), {"flip": true})
+	# The crack bleeds through the plaza: crystals grow out of it
+	for off in [Vector2(-150, -40), Vector2(160, 30), Vector2(-60, 150), Vector2(90, -150), Vector2(200, 160), Vector2(-210, 120)]:
+		prop("grim_crystal_purple", HEART + off, {"collide": false, "light": Color(1.0, 0.25, 0.3), "energy": 0.5, "light_scale": 0.8})
+	# Dead red light where the street lamps were
+	for pos in [Vector2(2392, 600), Vector2(1532, 520), Vector2(1060, 520), Vector2(532, 600), Vector2(697, 862), Vector2(1897, 862), Vector2(1296, 1000)]:
+		var l := Sheet.make_light(Color(1.0, 0.28, 0.32), 1.2, 2.6)
+		l.position = pos + Vector2(0, -60)
+		l.set_meta("base", 1.2)
 		add_child(l)
 		flicker_lights.append(l)
-	for c in [Vector2(520, 520), Vector2(2080, 560), Vector2(560, 1000), Vector2(1900, 1020)]:
-		crate_cluster(c, ["barrel", "crate", "sack"], 4, 0.3)
-	var terminal := add_interactable("res://assets/ninja/props/grim_head_statue.png", Vector2(760, 600), "[E] Read the log", 90.0, 3.0)
-	terminal.glow = true
-	terminal.light_color = Color(1.0, 0.3, 0.35)
-	terminal.used.connect(_read_terminal)
-	lore(Vector2(1700, 1040), "They crossed time to escape this. In your story, they became the invaders.")
-	lore(Vector2(1000, 430), "Every mirror here faces the past.")
+	for c in [Vector2(1290, 1150), Vector2(210, 420)]:
+		crate_cluster(c, ["barrel", "crate", "sack"], 3, 0.3)
+	for pos in [Vector2(1010, 940), Vector2(830, 1220), Vector2(540, 1210)]:
+		breakable("explosive", pos)
+	_terminal = add_interactable("res://assets/ninja/props/grim_head_statue.png", Vector2(2150, 470), "[E] Read the log", 90.0, 3.0)
+	_terminal.glow = true
+	_terminal.light_color = Color(1.0, 0.3, 0.35)
+	_terminal.used.connect(_read_terminal)
+	lore(Vector2(2000, 1196), "They crossed time to escape this. In your story, they became the invaders.")
+	lore(Vector2(2150, 362), "This street... it's the city. Reflected, and rotted.")
+	place_weapon("echo_wand", Vector2(1482, 1110))
 
 
 func run() -> void:
 	next_scene = "final"
-	title_card("THE HOLLOW FUTURE", "The world you made.", "The Hollow Future. The world you made.")
-	await wait(2.6)
+	var nl := title_card("THE HOLLOW FUTURE", "The world you made.", "The Hollow Future. The world you made. Here, the hero is the cause.", "REVERSAL: The hero is the cause.")
+	await wait(maxf(2.6, nl + 0.2))
 	start_clock(CLOCK)
 	summon_ally()
 	await wait(1.4)
-	say_line("This is what's left. This is what I did.", "you", Color(0.9, 0.75, 0.8))
+	say_line("This is what's left... This is what I did.", "you", Color(0.9, 0.75, 0.8))
 	set_objective("Read the refugee log (the stone head)")
+	objective = _terminal
 	await wait(2.0)
 
 	for i in WAVES.size():
@@ -71,7 +83,7 @@ func run() -> void:
 		await wait_clear()
 		await wait(0.8)
 
-	say_line("Something waits at the heart of this place.", "you", Color(0.9, 0.75, 0.8))
+	say_line("Something's waiting at the heart of this place.", "you", Color(0.9, 0.75, 0.8))
 	set_objective("Go to the heart of the breach")
 	objective = _marker(HEART)
 	while is_instance_valid(player) and player.global_position.distance_to(HEART) > 420.0:
@@ -82,7 +94,7 @@ func run() -> void:
 	await sentinel.died
 	world_cleared()
 	await wait(1.2)
-	say_line("The last fragment is waiting.", "you", Color(1, 0.75, 0.8))
+	say_line("The last fragment... It's waiting for me.", "you", Color(1, 0.75, 0.8))
 	var portal := add_portal(next_scene, HEART, true)
 	portal.activate()
 	set_objective("Step into the last mirror")
@@ -99,9 +111,9 @@ func run() -> void:
 func _read_terminal() -> void:
 	await ui.say([
 		"REFUGEE LOG 0417",
-		"The breach opened here. The one who made it carried a mirror.",
-		"We fled into the past. To them, we look like invaders.",
-		"His reflection never left. It waits at the heart of the breach.",
+		"Someone tried to rewind the end of the world. Their helmet cracked time instead.",
+		"We fled backwards through the cracks. To the past, we look like invaders.",
+		"Their reflection never left. It waits at the heart of the crack.",
 	], "Refugee Log", "terminal", "res://assets/ninja/enemies/robot_face.png")
 
 

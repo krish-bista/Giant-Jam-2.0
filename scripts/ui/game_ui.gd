@@ -55,6 +55,7 @@ var _weapon_cd_left := 0.0
 var _weapon_cd_total := 1.0
 var _title: Label
 var _title_sub: Label
+var _title_rule: Label
 var _death_label: Label
 var _choice_box: PanelContainer
 var _choice_q: Label
@@ -288,6 +289,11 @@ func _build() -> void:
 	_title_sub.size = Vector2(1280, 40)
 	_title_sub.modulate.a = 0.0
 	add_child(_title_sub)
+	_title_rule = _label(22, Color(0.55, 0.95, 1.0))
+	_title_rule.position = Vector2(0, 392)
+	_title_rule.size = Vector2(1280, 36)
+	_title_rule.modulate.a = 0.0
+	add_child(_title_rule)
 	_death_label = _label(40, Color(0.75, 0.85, 1.0))
 	_death_label.position = Vector2(0, 290)
 	_death_label.size = Vector2(1280, 120)
@@ -504,7 +510,7 @@ func letterbox(on: bool) -> void:
 			t.parallel().tween_property(bar, "position:y", 650.0 if on else 720.0, 0.35)
 
 
-## Voiced dialogue. Usage: await ui.say(["Hello.", "Put this on."], "Stranger", "stranger", face_path)
+## Voiced dialogue. Usage: await ui.say(["Easy.", "Put it on."], "Elder", "elder", face_path)
 ## Each line plays its recording; it moves on by itself after the voice ends, or on [E].
 func say(lines: Array, speaker := "", voice := "", face := "") -> void:
 	GameManager.input_locked = true
@@ -657,10 +663,10 @@ func _on_player_died() -> void:
 
 
 func show_death(deaths: int) -> void:
-	var msg := "Your echo returns..."
+	var msg := "The Reverser rewinds you..."
 	if deaths > GameManager.EVIL_AT:
-		msg = "Your echo returns... wrong."
-	_death_label.text = "YOU DIED\n" + msg
+		msg = "The Reverser rewinds you... wrong."
+	_death_label.text = "YOU FELL\n" + msg
 	_death_label.modulate.a = 0.0
 	var t := create_tween()
 	t.tween_property(_death_label, "modulate:a", 1.0, 0.4)
@@ -700,16 +706,24 @@ func _on_weapon_changed(id: String) -> void:
 	create_tween().tween_property(_weapon_slot, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK)
 
 
-func title_card(title: String, subtitle: String) -> void:
+func title_card(title: String, subtitle: String, rule := "") -> void:
 	_title.text = title
 	_title_sub.text = subtitle
+	_title_rule.text = rule
 	letterbox(true)
 	var t := create_tween()
 	t.tween_property(_title, "modulate:a", 1.0, 0.6)
 	t.parallel().tween_property(_title_sub, "modulate:a", 1.0, 0.6).set_delay(0.4)
-	t.tween_interval(2.6)
+	if rule != "":
+		t.parallel().tween_property(_title_rule, "modulate:a", 1.0, 0.5).set_delay(1.1)
+		# The rule of this world flips over like a mirror as it appears.
+		_title_rule.pivot_offset = Vector2(640, 18)
+		_title_rule.scale = Vector2(1, -1)
+		t.parallel().tween_property(_title_rule, "scale", Vector2.ONE, 0.45).set_delay(1.1).set_trans(Tween.TRANS_BACK)
+	t.tween_interval(3.2 if rule != "" else 2.6)
 	t.tween_property(_title, "modulate:a", 0.0, 0.6)
 	t.parallel().tween_property(_title_sub, "modulate:a", 0.0, 0.6)
+	t.parallel().tween_property(_title_rule, "modulate:a", 0.0, 0.6)
 	t.tween_callback(func(): letterbox(false))
 
 

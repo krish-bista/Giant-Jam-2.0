@@ -119,9 +119,9 @@ func run() -> void:
 		GameManager.flags["seen_final_cutscene"] = true
 		await ui.show_panels([
 			[P + "cutscenes/final_01.png", "The last fragment shows only you."],
-			[P + "cutscenes/final_02.png", "It moves first."],
+			[P + "cutscenes/final_02.png", "It moves when you move. A heartbeat before."],
 			[P + "cutscenes/final_03.png", "Everything you took, it took too."],
-			[P + "cutscenes/final_04.png", "Only one of you leaves. Neither of you can win."],
+			[P + "cutscenes/final_04.png", "Only one of you walks out."],
 		])
 	Audio.music("music_final")
 	_add_reflection(player)
@@ -138,9 +138,8 @@ func run() -> void:
 		GameManager.flags["heard_reflection"] = true
 		await ui.say([
 			"Finally. You walked all the way back to me.",
-			"I am your reflection. Every enemy you cut down, every artifact you took. I am made of all of it.",
-			"You broke time trying to win. The breach feeds on that. It feeds me.",
-			"As long as you fight, I grow. You can't outfight yourself.",
+			"I'm what the Reverser left behind. Every rewind, every kill... I'm made of all of it.",
+			"Go on. Hit me. Every blow only feeds me.",
 		], "Your Reflection", "evil", P + "chars/evil_face.png")
 	set_objective("Your reflection grows with every hit...")
 	evil.ready_for_ending.connect(_offer_ending)
@@ -214,8 +213,8 @@ func on_time_up() -> void:
 func _offer_ending() -> void:
 	_can_end = true
 	Audio.sfx("sfx_glitch", 0.0, -4.0)
-	ui.show_subtitle("The crack closes only when the one who made it is gone.", Color(0.9, 0.9, 1.0))
-	var l := Voice.say("The crack closes only when the one who made it is gone.", "stranger")
+	ui.show_subtitle("The crack closes only when the one who made it is gone.", Color(1.0, 0.92, 0.7))
+	var l := Voice.say("The crack closes only when the one who made it is gone.", "elder")
 	await wait(maxf(l, 2.0) + 0.3)
 	if _ending:
 		return
@@ -329,8 +328,8 @@ func _reflection_wins() -> void:
 	await close.finished
 	Audio.sfx("sfx_glitch", 0.0, 0.0)
 	Juice.chroma(0.03)
-	ui.show_subtitle("Too late. You died too many times. There's more of me in you than you.", Color(1, 0.4, 0.4))
-	var l := Voice.say("Too late. You died too many times. There's more of me in you than you.", "evil")
+	ui.show_subtitle("Too late. You rewound too many times. There's more of me in you than you.", Color(1, 0.4, 0.4))
+	var l := Voice.say("Too late. You rewound too many times. There's more of me in you than you.", "evil")
 	await wait(maxf(l, 3.0) + 0.3)
 	evil.rig.swing(player.global_position - evil.global_position, 0)
 	Audio.sfx("sfx_hit_heavy", 0.0, 2.0)

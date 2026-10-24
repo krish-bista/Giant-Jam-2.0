@@ -17,6 +17,7 @@ var tint := Color.WHITE
 ## walk into a bed or a table. "decal": lies flat on the floor (carpets) and is walked over.
 var solid := false
 var decal := false
+var flip := false
 var sprite: Sprite2D
 
 
@@ -32,6 +33,7 @@ static func make(name: String, pos: Vector2, opts := {}) -> Prop:
 	p.tint = opts.get("tint", Color.WHITE)
 	p.solid = opts.get("solid", false)
 	p.decal = opts.get("decal", false)
+	p.flip = opts.get("flip", false)
 	if p.decal:
 		p.collide = false
 	return p
@@ -48,6 +50,7 @@ func _ready() -> void:
 	var w := sprite.texture.get_width()
 	sprite.offset = Vector2(0, -h * 0.5 + 3)
 	sprite.modulate = tint
+	sprite.flip_h = flip
 	if decal:
 		z_index = -15
 		sprite.offset = Vector2.ZERO

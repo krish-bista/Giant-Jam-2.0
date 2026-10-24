@@ -38,6 +38,9 @@ var clock: TimeRift = null
 var next_scene := ""
 var _time_up := false
 var _keepout: Array = []     # [pos, radius] areas where scatter won't place props
+## Set in configure() to give a world a custom playable area (where enemies spawn and the
+## clock's mirror closes in). Empty = the whole world minus a margin.
+var arena_override := Rect2()
 var _rng := RandomNumberGenerator.new()
 
 
@@ -45,7 +48,7 @@ func _ready() -> void:
 	y_sort_enabled = true
 	_rng.seed = hash(scene_file_path)
 	configure()
-	ARENA = Rect2(Vector2(70, 90), world_size - Vector2(140, 150))
+	ARENA = arena_override if arena_override.has_area() else Rect2(Vector2(70, 90), world_size - Vector2(140, 150))
 	Juice.reset_time()
 	Juice.set_screen(vignette, scanlines, desaturate, screen_tint)
 	_build_ground()
@@ -436,6 +439,20 @@ func prop(name: String, pos: Vector2, opts := {}) -> Prop:
 	return p
 
 
+## A solid invisible block (city walls, cliff faces) so you can't walk where the ground art
+## shows a wall.
+func block(rect: Rect2) -> void:
+	var body := StaticBody2D.new()
+	body.collision_layer = 1
+	var shape := CollisionShape2D.new()
+	var r := RectangleShape2D.new()
+	r.size = rect.size
+	shape.shape = r
+	shape.position = rect.get_center()
+	body.add_child(shape)
+	add_child(body)
+
+
 func breakable(kind: String, pos: Vector2) -> Breakable:
 	var b := Breakable.make(kind, pos)
 	add_child(b)
@@ -576,17 +593,21 @@ func _on_player_died() -> void:
 	if not is_instance_valid(player):
 		return
 	Juice.set_screen(vignette, scanlines, desaturate, screen_tint)
+	# The Reverser rewinds you: a negative flash, time sucked backwards, and you stand up again.
+	Juice.invert(0.3)
+	Audio.sfx("sfx_time_restore", 0.0, -2.0, 1.2)
+	Juice.text_pop(pos + Vector2(0, -40), "REWIND", Color(0.6, 0.95, 1.0), 26, 40.0, 1.2)
 	player.revive(pos + Vector2(0, 44), 0.6)
 	Events.player_revived.emit(GameManager.deaths)
 	if GameManager.deaths == 1:
-		ui.show_subtitle("An echo can't die. It only repeats.", Color(0.9, 0.9, 1.0))
-		var l := Voice.say("An echo can't die. It only repeats.", "stranger")
+		ui.show_subtitle("The Reverser pulled you back. It always will.", Color(1.0, 0.92, 0.7))
+		var l := Voice.say("The Reverser pulled you back. It always will.", "elder")
 		await wait(maxf(l, 1.5) + 0.3)
-		ui.show_subtitle("But every return leaves less of you, and more of your reflection.", Color(0.9, 0.9, 1.0))
-		Voice.say("But every return leaves less of you, and more of your reflection.", "stranger")
+		ui.show_subtitle("But every rewind leaves less of you, and more of your reflection.", Color(1.0, 0.92, 0.7))
+		Voice.say("But every rewind leaves less of you, and more of your reflection.", "elder")
 	elif GameManager.deaths == GameManager.EVIL_AT:
-		ui.show_subtitle("Careful. There's more reflection in you than you now.", Color(1, 0.6, 0.6))
-		Voice.say("Careful. There's more reflection in you than you now.", "stranger")
+		ui.show_subtitle("Careful. There's more reflection in you than you, now.", Color(1, 0.6, 0.6))
+		Voice.say("Careful. There's more reflection in you than you, now.", "elder")
 	elif GameManager.deaths == GameManager.RABID_AT:
 		_go_rabid()
 	if GameManager.is_rabid():
@@ -606,15 +627,15 @@ func _go_rabid() -> void:
 
 # ---------------- ally, weapons, titles, objectives ----------------
 ## Your reflection steps out of a mirror to fight beside you (not while rabid).
-func summon_ally(first_line := false) -> void:
+func summon_ally(first_line := false) -> float:
 	if GameManager.is_rabid() or is_instance_valid(ally):
-		return
+		return 0.0
 	ally = ReflectionAlly.new()
 	ally.global_position = player.global_position + Vector2(-60, 10)
 	add_child(ally)
 	var line := "I'm your reflection. The part of you that still wants to save them. Let's go." if first_line else "I'm still with you."
 	ui.show_subtitle(line, Color(0.6, 0.95, 1.0))
-	Voice.say(line, "reflection")
+	return Voice.say(line, "reflection")
 
 
 func place_weapon(id: String, pos: Vector2) -> void:
@@ -628,9 +649,11 @@ func place_weapon(id: String, pos: Vector2) -> void:
 	keepout(pos, 90.0)
 
 
-func title_card(title: String, subtitle: String, narration: String) -> void:
-	ui.title_card(title, subtitle)
-	Voice.say(narration, "narrator")
+## World title: name, era, and the one rule this timeline has turned upside down.
+## Returns how long the narration runs, so the world can wait for it.
+func title_card(title: String, subtitle: String, narration: String, rule := "") -> float:
+	ui.title_card(title, subtitle, rule)
+	return Voice.say(narration, "narrator")
 
 
 func set_objective(text: String) -> void:

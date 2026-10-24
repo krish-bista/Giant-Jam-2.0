@@ -1,8 +1,15 @@
-# Echo Breach
+# Inverted Soul
 
-A 2D top-down action game about **reversal**, built in Godot 4.7.2 for a 10-hour jam. About 10 minutes long.
+A 2D top-down action game about **reversal**, built in Godot 4.7.2 for a jam. About 6 to 7 minutes long.
 
-You wake with no memory. A stranger hands you a VR helmet. Inside, you learn the Divine Sword and the Mirror Shield, then travel through mirror fragments to three broken timelines: a modern city under alien attack, a prehistoric jungle where the hunt flips on you, and a far-future alien core where enemies mirror your every move. At the end you face yourself, reversed. You can't win by fighting.
+You wake with no memory. An old man tells you the helmet on the table is **the Reverser**, a machine
+you built to turn time backwards, and that using it cracked time like a mirror. Now every era runs in
+reverse and every world's clock counts down. Inside the Reverser you learn the Divine Sword and the
+Mirror Shield, then follow the cracks through three timelines, each with one rule turned upside down:
+the present-day city where the "invaders" are refugees, a prehistoric jungle where the hunter becomes
+the hunted, and the Hollow Future, the same city reflected and rotted, where the hero is the cause.
+At the end you face your own reflection. You can't win by fighting. When you fall, the Reverser rewinds
+you, but every rewind leaves more of your reflection in you.
 
 ## Play
 

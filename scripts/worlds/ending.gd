@@ -7,12 +7,12 @@ const FONT := preload("res://assets/ninja/ui/font.tres")
 const DIVINE := {
 	"panel": "res://assets/ninja/cutscenes/ending_divine.png", "voice": "narrator", "music": "music_ending",
 	"title": "ENDING: DIVINE", "title_color": Color(1, 0.92, 0.65), "text_color": Color(1, 0.97, 0.9),
-	"lines": ["The mirror is quiet.", "Time turns forward again. Somewhere ahead, a sky stays whole.", "No one will remember you.", "That was the point."],
+	"lines": ["The mirror goes still.", "Time takes a breath... and moves forward again.", "Somewhere ahead, the sky stays whole.", "No one will remember who closed the crack.", "That was the point."],
 }
 const EVIL := {
 	"panel": "res://assets/ninja/cutscenes/ending_evil.png", "voice": "evil", "music": "music_final",
 	"title": "ENDING: REFLECTION", "title_color": Color(1, 0.3, 0.35), "text_color": Color(1, 0.85, 0.85),
-	"lines": ["The mirror smiles.", "Your reflection walks out into the world, wearing your face.", "The breach never closes. It only grows.", "Somewhere, someone is running from you."],
+	"lines": ["The mirror smiles back.", "Your reflection steps out into the world, wearing your face.", "The crack never closes. Time keeps running backwards.", "Faster now.", "Somewhere, someone is running from you."],
 }
 
 var _can_restart := false
@@ -68,9 +68,9 @@ func _ready() -> void:
 	shade.size = Vector2(1280, 720)
 	layer.add_child(shade)
 	var box := VBoxContainer.new()
-	box.position = Vector2(0, 120)
+	box.position = Vector2(0, 90)
 	box.size = Vector2(1280, 480)
-	box.add_theme_constant_override("separation", 18)
+	box.add_theme_constant_override("separation", 14)
 	layer.add_child(box)
 	var labels: Array[Label] = []
 	for line in e.lines:
@@ -79,11 +79,11 @@ func _ready() -> void:
 	spacer.custom_minimum_size = Vector2(0, 18)
 	box.add_child(spacer)
 	var title := _line(box, e.title, 56, e.title_color)
-	var game := _line(box, "ECHO BREACH", 24, Color(1, 1, 1))
-	var stats := _line(box, "Deaths: %d    Best combo: %d    Time: %d:%02d" % [GameManager.deaths, GameManager.best_combo, int(GameManager.run_time) / 60, int(GameManager.run_time) % 60], 16, Color(0.85, 0.85, 0.95))
+	var game := _line(box, "INVERTED SOUL", 26, Color(1, 1, 1))
+	var stats := _line(box, "Rewinds: %d    Best combo: %d    Time: %d:%02d" % [GameManager.deaths, GameManager.best_combo, int(GameManager.run_time) / 60, int(GameManager.run_time) % 60], 16, Color(0.85, 0.85, 0.95))
 	var credits := _line(box, "Krish  ·  Nischal  ·  Azad", 20, Color(0.8, 0.85, 0.95))
 	var assets := _line(box, "Art, music & sound: Pixel-boy (Ninja Adventure, CC0) · Kenney (CC0)", 14, Color(0.65, 0.7, 0.8))
-	var again := _line(box, "[E] Play again" + ("   (die fewer than 3 times for the Divine ending)" if _evil else ""), 18, Color(0.7, 0.9, 1.0))
+	var again := _line(box, "[E] Play again" + ("   (fall fewer than 3 times for the Divine ending)" if _evil else ""), 18, Color(0.7, 0.9, 1.0))
 	_play(e, labels, [title, game, stats, credits, assets, again])
 
 
@@ -97,7 +97,7 @@ func _process(delta: float) -> void:
 	if _can_restart and Input.is_action_just_pressed("interact"):
 		_can_restart = false
 		GameManager.reset_run()
-		GameManager.go_to_scene("amnesia_room")
+		GameManager.go_to_scene("title")
 
 
 func _play(e: Dictionary, labels: Array[Label], tail: Array) -> void:
