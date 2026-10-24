@@ -21,8 +21,7 @@ signal hurt(amount: float, source: Variant)
 @export var reflect_power: float = 1.0
 @export var luck: float = 0.0
 
-const HYPNO_RANGE := 150.0
-const HYPNO_ARC := 70.0
+const HYPNO_RANGE := 250.0
 const HYPNO_COOLDOWN := 12.0
 const CHAIN_WINDOW := 0.6
 const RIPOSTE_WINDOW := 1.2
@@ -53,6 +52,8 @@ var _last_swing := -10.0
 var _last_dash_end := -10.0
 var _riposte_until := -10.0
 var _now := 0.0
+var _special_cd := 0.0
+var rabid := false
 
 @onready var _visual: Node2D = $Visual
 @onready var _sword = $DivineSword
@@ -76,13 +77,15 @@ func setup_for_level() -> void:
 	sync_stats()
 	health = clampf(GameManager.health, 1.0, max_health)
 	_emit_health()
+	if GameManager.is_rabid():
+		set_rabid(true)
 
 
 func sync_stats() -> void:
 	var s: Dictionary = GameManager.stats
 	max_health = int(s.max_health)
 	damage = int(s.damage)
-	speed = s.speed
+	speed = s.speed * (1.12 if rabid else 1.0)
 	reflect_power = s.reflect_power
 	luck = s.luck
 	health = minf(maxf(health, GameManager.health), max_health)
@@ -123,6 +126,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_attack_requested = true
 	elif event.is_action_pressed("hypno") and in_game:
 		_try_hypno()
+	elif event.is_action_pressed("special") and in_game:
+		_try_special()
 
 
 func _notification(what: int) -> void:
@@ -146,6 +151,7 @@ func _physics_process(delta: float) -> void:
 	_dash_cooldown_left = maxf(0.0, _dash_cooldown_left - delta)
 	_iframes_left = maxf(0.0, _iframes_left - delta)
 	_hypno_cooldown_left = maxf(0.0, _hypno_cooldown_left - delta)
+	_special_cd = maxf(0.0, _special_cd - delta)
 	if _reverse_left > 0.0:
 		_reverse_left -= delta
 		if _reverse_left <= 0.0:
@@ -208,7 +214,7 @@ func _swing() -> void:
 		_chain = (_chain + 1) % 3 if _now - _last_swing < CHAIN_WINDOW else 0
 		kind = _chain
 	var crit := _now < _riposte_until
-	var amount: float = damage * GameManager.combo_bonus()
+	var amount: float = damage * GameManager.combo_bonus() * (1.4 if rabid else 1.0)
 	if GameManager.has_flag("echo_blade"):
 		_swing_count += 1
 		if _swing_count % 4 == 0:
@@ -290,6 +296,8 @@ func take_damage(amount: float, source: Variant = null) -> void:
 			if rig:
 				rig.block_fx()
 
+	if rabid:
+		damage_taken *= 1.25
 	hurt.emit(damage_taken, source)
 	var previous_health := health
 	health = maxf(0.0, health - damage_taken)
@@ -367,40 +375,138 @@ func _emit_health() -> void:
 		Events.player_health_changed.emit(health, max_health)
 
 
+## Hypno Reverse: a mirror wave rolls out from you. Everything inside is reversed:
+## enemies turn on each other, enemy bolts fly back at their shooters, bosses reel.
+## Their aggression becomes your strength: you heal a little for every enemy turned.
 func _try_hypno() -> void:
 	if not GameManager.hypno_unlocked or _hypno_cooldown_left > 0.0 or _dead:
 		return
 	_hypno_cooldown_left = HYPNO_COOLDOWN
 	Events.ability_cooldown.emit("hypno", HYPNO_COOLDOWN, HYPNO_COOLDOWN)
-	Audio.sfx("sfx_hypno", 0.05)
-	var duration := 8.0 if GameManager.has_flag("long_hypno") else 5.0
-	var min_dot := cos(deg_to_rad(HYPNO_ARC * 0.5))
+	Audio.sfx("sfx_hypno_reverse", 0.03, 0.0)
+	Audio.sfx("sfx_hypno", 0.05, -6.0)
+	var duration := 8.0 if GameManager.has_flag("long_hypno") else 6.0
+	var turned := 0
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(e) or not e.has_method("flip"):
 			continue
-		var offset: Vector2 = e.global_position - global_position
-		if offset.length() <= HYPNO_RANGE and (offset.is_zero_approx() or facing_direction.dot(offset.normalized()) >= min_dot):
+		if e.global_position.distance_to(global_position) <= HYPNO_RANGE + (60.0 if e.is_in_group("boss") else 0.0):
 			e.flip(duration)
-	_show_hypno_cone()
+			if not e.is_in_group("boss"):
+				turned += 1
+	var reversed := 0
+	for n in get_tree().current_scene.get_children():
+		if n is Projectile and not n.hits_enemies and n.global_position.distance_to(global_position) <= HYPNO_RANGE * 1.6:
+			n.reflect()
+			reversed += 1
+	if turned > 0:
+		heal(3.0 * turned, false)
+		Juice.text_pop(global_position + Vector2(0, -30), "%d REVERSED" % turned, Color(1, 0.6, 1.0), 24)
+	if reversed > 0:
+		GameManager.add_combo(reversed)
+	_show_hypno_wave()
 
 
-func _show_hypno_cone() -> void:
-	var cone := Polygon2D.new()
-	var pts := PackedVector2Array([Vector2.ZERO])
-	var half := deg_to_rad(HYPNO_ARC * 0.5)
-	for i in 13:
-		var a := -half + (2.0 * half) * i / 12.0
-		pts.append(Vector2.RIGHT.rotated(a) * HYPNO_RANGE)
-	cone.polygon = pts
-	cone.color = Color(1.4, 0.4, 1.3, 0.45)
-	cone.rotation = facing_direction.angle()
-	cone.z_index = -1
-	add_child(cone)
-	var t := cone.create_tween()
-	t.tween_property(cone, "modulate:a", 0.0, 0.4)
-	t.tween_callback(cone.queue_free)
-	Juice.fx("aura", global_position + facing_direction * 70.0, 4.0, 0.0, Color(2.0, 0.6, 1.8))
-	Juice.light_flash(global_position + facing_direction * 60.0, Color(1, 0.3, 0.9), 2.0, 2.4, 0.4)
+func _show_hypno_wave() -> void:
+	Juice.invert(0.22)
+	Juice.chroma(0.025)
+	Juice.slow_pulse(0.35, 0.18)
+	Juice.shockwave(global_position, 0.07, 0.6)
+	Juice.zoom_punch(0.08)
+	for i in 2:
+		var ring := Line2D.new()
+		ring.width = 8.0 - i * 3.0
+		ring.default_color = Color(2.2, 0.7, 2.2, 0.9) if i == 0 else Color(0.7, 2.2, 2.4, 0.9)
+		var pts := PackedVector2Array()
+		for k in 49:
+			pts.append(Vector2.RIGHT.rotated(k * TAU / 48.0) * 20.0)
+		ring.points = pts
+		ring.z_index = 20
+		add_child(ring)
+		var t := ring.create_tween()
+		t.tween_interval(i * 0.08)
+		t.tween_property(ring, "scale", Vector2.ONE * (HYPNO_RANGE / 20.0), 0.4).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+		t.parallel().tween_property(ring, "modulate:a", 0.0, 0.45)
+		t.tween_callback(ring.queue_free)
+	Juice.fx("aura", global_position, 7.0, 0.0, Color(2.0, 0.6, 1.8))
+	Juice.light_flash(global_position, Color(1, 0.4, 1.0), 2.0, 4.0, 0.45)
+
+
+## [F] The current world's special weapon.
+func _try_special() -> void:
+	var id: String = GameManager.weapon
+	if id == "" or _special_cd > 0.0 or _dead:
+		return
+	var w: Dictionary = WeaponData.ALL[id]
+	_special_cd = w.cooldown
+	Events.ability_cooldown.emit("special", w.cooldown, w.cooldown)
+	var dmg: float = damage * GameManager.combo_bonus() * (1.4 if rabid else 1.0)
+	var parent := get_tree().current_scene
+	if rig:
+		rig.show_special(load(w.sprite), id)
+	match id:
+		"flare_bow":
+			Audio.sfx("sfx_bow", 0.08, -2.0)
+			for spread in [-0.12, 0.0, 0.12]:
+				Projectile.player_shot(parent, global_position + facing_direction * 24.0, facing_direction.rotated(spread), 760.0, dmg * 1.1, self,
+					{"tex": "res://assets/ninja/weapons/arrow.png", "tint": Color(1.8, 1.5, 0.8), "pierce": 3})
+			Juice.light_flash(global_position + facing_direction * 30.0, Color(1, 0.85, 0.4), 1.4, 1.2, 0.2)
+		"hunter_axe":
+			Audio.sfx("sfx_axe", 0.05, 0.0)
+			Juice.fx("slash_circular", global_position + facing_direction * 20.0, 5.0, facing_direction.angle(), Color(1.8, 1.1, 0.6))
+			Juice.shake(8.0, 0.45)
+			Juice.debris(global_position + facing_direction * 60.0, "res://assets/ninja/fx/particle_rock.png", 6, 10)
+			var hit := 0
+			for e in get_tree().get_nodes_in_group("enemies") + get_tree().get_nodes_in_group("breakable"):
+				if not is_instance_valid(e):
+					continue
+				var off: Vector2 = e.global_position - global_position
+				if off.length() <= 120.0 and (off.length() < 20.0 or facing_direction.dot(off.normalized()) > -0.3):
+					e.take_damage(dmg * 2.2, self)
+					if e.has_method("stun"):
+						e.stun(1.4)
+					if e is Enemy:
+						e._knock = off.normalized() * 520.0
+					hit += 1
+			if hit > 0:
+				Juice.hitstop(0.09)
+		"echo_wand":
+			Audio.sfx("sfx_wand", 0.05, -2.0)
+			for k in 3:
+				Projectile.player_shot(parent, global_position + facing_direction * 20.0, facing_direction.rotated((k - 1) * 0.5), 420.0, dmg * 0.9, self,
+					{"look": "big_energy_ball_purple", "tint": Color(1.1, 0.7, 1.3), "homing": 6.0})
+			Juice.light_flash(global_position, Color(0.8, 0.4, 1.0), 1.6, 1.6, 0.25)
+
+
+## Revive at your grave: an echo can't die, it only repeats.
+func revive(pos: Vector2, hp_fraction := 0.6) -> void:
+	_dead = false
+	global_position = pos
+	health = maxf(1.0, max_health * hp_fraction)
+	_emit_health()
+	_visual.visible = true
+	if rig:
+		rig.visible = true
+	_iframes_left = 2.5
+	controls_reversed = false
+	velocity = Vector2.ZERO
+	Audio.sfx("sfx_revive", 0.0, -2.0)
+	Juice.fx("circle_white", pos, 4.0, 0.0, Color(1.2, 1.8, 2.2))
+	Juice.light_flash(pos, Color(0.6, 0.9, 1.0), 2.0, 3.0, 0.6)
+	Juice.shockwave(pos, 0.05, 0.5)
+	# Push enemies away so you don't die again instantly.
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(e) and e is Enemy and e.global_position.distance_to(pos) < 240.0:
+			e._knock = (e.global_position - pos).normalized() * 500.0
+			e.stun(1.5)
+
+
+## Rabid: you lost your sanity. Stronger and faster, but you take more damage and your mind frays.
+func set_rabid(on: bool) -> void:
+	rabid = on
+	if rig:
+		rig.set_rabid(on)
+	sync_stats()
 
 
 func _start_dash(movement_input: Vector2) -> void:
@@ -421,7 +527,8 @@ func _update_blink() -> void:
 	var a := 1.0
 	if _iframes_left > 0.0:
 		a = 0.35 if int(_iframes_left * 20.0) % 2 == 0 else 1.0
-	_visual.modulate = Color(1.0, 0.6, 1.0, a) if controls_reversed else Color(1, 1, 1, a)
+	var base: Color = rig.base_tint if rig else Color.WHITE
+	_visual.modulate = Color(1.0, 0.6, 1.0, a) if controls_reversed else Color(base.r, base.g, base.b, a * base.a)
 
 
 func _update_facing() -> void:

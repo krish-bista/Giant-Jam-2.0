@@ -47,6 +47,8 @@ var _wander := Vector2.ZERO
 var _wander_t := 0.0
 var _t := 0.0
 var _face := Vector2.DOWN
+var _stun_left := 0.0
+var _aim_point := Vector2.ZERO
 var sprite: AnimatedSprite2D
 var shadow: Sprite2D
 var light: PointLight2D
@@ -146,6 +148,17 @@ func _physics_process(delta: float) -> void:
 
 	var target := _current_target()
 	var move := Vector2.ZERO
+	if _stun_left > 0.0:
+		_stun_left -= delta
+		_winding = false
+		velocity = _knock
+		_knock = _knock.move_toward(Vector2.ZERO, 900.0 * delta)
+		move_and_slide()
+		_update_visual()
+		queue_redraw()
+		return
+	if _winding and target:
+		_aim_point = target.global_position
 	if _winding:
 		_wind_left -= delta
 		if _wind_left <= 0.0:
@@ -254,6 +267,9 @@ func _separation() -> Vector2:
 
 
 func _start_windup() -> void:
+	var t := _current_target()
+	if t:
+		_aim_point = t.global_position
 	_winding = true
 	_wind_left = windup
 	_cd_left = attack_cd
@@ -277,7 +293,7 @@ func _resolve_attack(target: Node2D) -> void:
 			if e != self and is_instance_valid(e) and global_position.distance_to(e.global_position) <= reach:
 				e.take_damage(damage, self)
 	if to_t.length() <= reach:
-		var dmg := damage * (1.5 if state == "flipped" else 1.0)
+		var dmg := damage * (2.0 if state == "flipped" else 1.0)
 		target.take_damage(dmg, self)
 
 
@@ -335,6 +351,14 @@ func _drop_loot() -> void:
 			Pickup.spawn_artifact(parent, global_position + Vector2(12, 0), id)
 
 
+## Knocked senseless: can't move or attack for a moment (Hunter's Axe, revive shockwave).
+func stun(seconds: float) -> void:
+	if _dead or immortal:
+		return
+	_stun_left = maxf(_stun_left, seconds)
+	_winding = false
+
+
 func flip(duration: float) -> void:
 	if _dead or immortal:
 		return
@@ -383,6 +407,23 @@ func _update_visual() -> void:
 
 
 func _draw() -> void:
+	# Red laser sight while a ranged enemy charges its shot.
+	if ranged and _winding and state != "flipped":
+		var from := Vector2(0, -radius * 0.6)
+		var to := to_local(_aim_point)
+		var f := 0.6 + 0.4 * sin(_t * 45.0)
+		var dir := (to - from).normalized()
+		draw_line(from, from + dir * 900.0, Color(2.6, 0.3, 0.3, 0.25 * f), 5.0)
+		draw_line(from, from + dir * 900.0, Color(3.0, 0.6, 0.6, 0.8 * f), 1.5)
+		draw_circle(to, 5.0, Color(3.0, 0.5, 0.5, 0.7 * f))
+	if _stun_left > 0.0:
+		for i in 3:
+			var a := _t * 6.0 + i * TAU / 3.0
+			draw_circle(Vector2(cos(a) * 14.0, -radius * 2.0 - 4.0 + sin(a) * 4.0), 3.0, Color(2.2, 2.0, 0.6))
+	if state == "flipped":
+		for i in 2:
+			var a0 := _t * 7.0 + i * PI
+			draw_arc(Vector2(0, -radius * 2.0 - 8.0), 8.0, a0, a0 + 2.2, 10, Color(2.2, 0.6, 2.2), 2.5, true)
 	if immortal and state == "idle" and _winding:
 		var t := 1.0 - _wind_left / maxf(windup, 0.01)
 		draw_circle(Vector2.ZERO, attack_range * t, Color(1, 0.2, 0.2, 0.18))

@@ -14,9 +14,15 @@ Open the project in **Godot 4.7.2** and press **F5**.
 | Space | Dash (invulnerable while dashing) |
 | Left click | Divine Sword (aim with the mouse). 3 hits in a row = spin finisher; attack right after a dash = lunge; attack right after a reflect = **crit** |
 | Right click (hold) | Mirror Shield. Raise it just before a hit lands to **reflect** it (bolts fly back at the shooter) |
-| Q | Hypno Reverse (unlocked in World 1): enemies in front fight each other for a few seconds |
+| Q | Hypno Reverse (unlocked in World 1): a mirror wave that turns nearby enemies on each other, sends their bolts back and staggers bosses |
+| F | The current world's special weapon (Flare Bow / Hunter's Axe / Echo Wand) |
 | E | Talk / interact / advance text |
 | Esc | Pause |
+
+## The story
+Time broke and runs backwards like a reflection. You walk the broken timelines back to the crack, and learn you made it: the "aliens" are survivors of the future you caused. Your reflection fights beside you in every world, and waits for you at the end, made of everything you took. You can't outfight yourself. Full script: [docs/DIALOGUE.md](docs/DIALOGUE.md).
+
+**Deaths:** you leave a grave and revive, but lose sanity. 3 deaths locks in the **Reflection** ending; a 4th makes you **rabid** (stronger, faster, fragile, and your ally leaves). Survive with fewer than 3 deaths for the **Divine** ending.
 
 ## What makes it feel good
 - Animated pixel-art hero with walking legs, a sword drawn from the back with a "shing", glowing slash trails, and a shiny mirror shield.
@@ -33,13 +39,13 @@ Open the project in **Godot 4.7.2** and press **F5**.
 
 | Scene | What happens |
 |---|---|
-| Amnesia room | Wake up, the Stranger's lore drop, put on the helmet |
-| Tutorial | Move, dash, take the sword, attack, take the shield, block, 2 perfect reflects, step through the fragment |
-| World 1 (city) | 3 alien waves, the Hypnotic mini boss (reverses your controls; unlocks Hypno Reverse), the Warden |
-| World 2 (jungle) | Hunt the herd to fill the hunt meter, the pack flips and hunts you for 10s, Alpha Rex (switches between chasing and fleeing) |
-| World 3 (core) | Mirror constructs copy your movement across the center line, the twist on a terminal, Core Sentinel, then keep fighting or enter the final fragment |
-| Final | 4 cutscene panels, Evil You (copies your stats, blocks and reflects, gets stronger when hit), turn the blade on yourself |
-| Ending | Quiet text over a whole sky |
+| Amnesia room | Wake up; the Stranger explains the reversal; put on the helmet |
+| The Simulation | A holographic village. The Wise Elder trains you, or lets you skip |
+| World 1: The Fallen City | 3 alien waves, the Hypnotic mini boss (reverses your controls; unlocks Hypno Reverse), the Warden |
+| World 2: The First Hunt | Hunt the herd to fill the hunt meter, the pack flips and hunts you for 10s, the Alpha (switches between chasing and fleeing, leaps and slams) |
+| World 3: The Hollow Future | The grim world: husks, wraiths, seers and brutes, the refugee log, the bone wyrm Core Sentinel, then keep fighting or enter the last mirror |
+| Final | 4 panels; your reflection explains what it is, then fights (blocks, reflects, grows when hit); turn the blade on yourself, or it stops your hand |
+| Ending | DIVINE (dawn) or REFLECTION (blood sky), narrated, with run stats |
 
 ## Project layout
 

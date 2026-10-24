@@ -44,6 +44,24 @@ var _combo_bar: ColorRect
 var _combo_shown := 0
 var _bars: Array[ColorRect] = []
 var _arrow: Polygon2D
+var _sanity_label: Label
+var _pips: Array[ColorRect] = []
+var _objective: Label
+var _weapon_slot: Control
+var _weapon_icon: TextureRect
+var _weapon_cd: ColorRect
+var _weapon_name: Label
+var _weapon_cd_left := 0.0
+var _weapon_cd_total := 1.0
+var _title: Label
+var _title_sub: Label
+var _death_label: Label
+var _choice_box: PanelContainer
+var _choice_q: Label
+var _choice_buttons: Array[Button] = []
+var _choice_index := 0
+var _choice_active := false
+signal _chosen(index: int)
 
 
 func _ready() -> void:
@@ -62,6 +80,10 @@ func _ready() -> void:
 	Events.artifact_picked.connect(_on_artifact)
 	Events.player_died.connect(_on_player_died)
 	Events.combo_changed.connect(_on_combo)
+	Events.player_revived.connect(func(_d): _refresh_sanity())
+	Events.weapon_changed.connect(_on_weapon_changed)
+	Events.objective_changed.connect(func(t): _objective.text = ("> " + t) if t != "" else "")
+	Events.ability_cooldown.connect(_on_cooldown)
 	Events.ability_unlocked.connect(func(a): if is_instance_valid(hud): hud.unlock_ability(a))
 	Events.dialogue_requested.connect(func(lines): say(lines))
 	_setup_hud.call_deferred()
@@ -76,6 +98,8 @@ func _setup_hud() -> void:
 	slots.get_node("Shield").visible = GameManager.has_shield
 	slots.get_node("Hypno").visible = GameManager.hypno_unlocked
 	hud.set_player_health(GameManager.health, GameManager.stats.max_health, true)
+	_refresh_sanity()
+	_on_weapon_changed(GameManager.weapon)
 
 
 func _label(size: int, color := Color.WHITE, align := HORIZONTAL_ALIGNMENT_CENTER) -> Label:
@@ -200,6 +224,102 @@ func _build() -> void:
 	_combo_bar.size = Vector2(140, 5)
 	_combo_root.add_child(_combo_bar)
 
+	# Sanity pips (under the health bar)
+	_sanity_label = _label(14, Color(0.75, 0.85, 1.0), HORIZONTAL_ALIGNMENT_LEFT)
+	_sanity_label.position = Vector2(26, 54)
+	_sanity_label.size = Vector2(90, 20)
+	_sanity_label.text = "SANITY"
+	add_child(_sanity_label)
+	for i in GameManager.EVIL_AT:
+		var pip := ColorRect.new()
+		pip.size = Vector2(16, 10)
+		pip.position = Vector2(104 + i * 22, 59)
+		add_child(pip)
+		_pips.append(pip)
+	_objective = _label(16, Color(1, 0.95, 0.75), HORIZONTAL_ALIGNMENT_LEFT)
+	_objective.position = Vector2(26, 78)
+	_objective.size = Vector2(700, 24)
+	add_child(_objective)
+
+	# World weapon slot [F]
+	_weapon_slot = Control.new()
+	_weapon_slot.position = Vector2(312, 636)
+	_weapon_slot.visible = false
+	add_child(_weapon_slot)
+	var wbg := Panel.new()
+	var ws := StyleBoxFlat.new()
+	ws.bg_color = Color(0.06, 0.06, 0.1, 0.9)
+	ws.border_color = Color(1, 0.85, 0.4)
+	ws.set_border_width_all(3)
+	ws.set_corner_radius_all(6)
+	wbg.add_theme_stylebox_override("panel", ws)
+	wbg.size = Vector2(56, 56)
+	_weapon_slot.add_child(wbg)
+	_weapon_icon = TextureRect.new()
+	_weapon_icon.size = Vector2(48, 48)
+	_weapon_icon.position = Vector2(4, 4)
+	_weapon_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_weapon_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_weapon_slot.add_child(_weapon_icon)
+	_weapon_cd = ColorRect.new()
+	_weapon_cd.color = Color(0, 0, 0, 0.6)
+	_weapon_cd.position = Vector2(4, 4)
+	_weapon_cd.size = Vector2(48, 0)
+	_weapon_slot.add_child(_weapon_cd)
+	var key := _label(14, Color.WHITE)
+	key.text = "F"
+	key.position = Vector2(0, 42)
+	key.size = Vector2(56, 20)
+	_weapon_slot.add_child(key)
+	_weapon_name = _label(14, Color(1, 0.9, 0.6), HORIZONTAL_ALIGNMENT_LEFT)
+	_weapon_name.position = Vector2(0, -22)
+	_weapon_name.size = Vector2(200, 20)
+	_weapon_slot.add_child(_weapon_name)
+
+	# Title card
+	_title = _label(60, Color(1, 1, 1))
+	_title.add_theme_constant_override("outline_size", 12)
+	_title.position = Vector2(0, 260)
+	_title.size = Vector2(1280, 80)
+	_title.modulate.a = 0.0
+	add_child(_title)
+	_title_sub = _label(24, Color(0.85, 0.88, 1.0))
+	_title_sub.position = Vector2(0, 340)
+	_title_sub.size = Vector2(1280, 40)
+	_title_sub.modulate.a = 0.0
+	add_child(_title_sub)
+	_death_label = _label(40, Color(0.75, 0.85, 1.0))
+	_death_label.position = Vector2(0, 290)
+	_death_label.size = Vector2(1280, 120)
+	_death_label.modulate.a = 0.0
+	add_child(_death_label)
+
+	# Choice menu
+	_choice_box = PanelContainer.new()
+	_choice_box.add_theme_stylebox_override("panel", _panel_style(Color(1, 0.85, 0.45)))
+	_choice_box.position = Vector2(390, 340)
+	_choice_box.custom_minimum_size = Vector2(500, 140)
+	var cv := VBoxContainer.new()
+	cv.add_theme_constant_override("separation", 12)
+	_choice_box.add_child(cv)
+	_choice_q = _label(22, Color(1, 0.95, 0.8))
+	cv.add_child(_choice_q)
+	var ch := HBoxContainer.new()
+	ch.alignment = BoxContainer.ALIGNMENT_CENTER
+	ch.add_theme_constant_override("separation", 24)
+	cv.add_child(ch)
+	for i in 2:
+		var b := Button.new()
+		b.add_theme_font_override("font", FONT)
+		b.add_theme_font_size_override("font_size", 20)
+		b.custom_minimum_size = Vector2(210, 44)
+		b.focus_mode = Control.FOCUS_NONE
+		b.pressed.connect(_on_choice_button.bind(i))
+		ch.add_child(b)
+		_choice_buttons.append(b)
+	_choice_box.visible = false
+	add_child(_choice_box)
+
 	# Objective arrow
 	_arrow = Polygon2D.new()
 	_arrow.polygon = PackedVector2Array([Vector2(18, 0), Vector2(-10, -12), Vector2(-4, 0), Vector2(-10, 12)])
@@ -288,6 +408,11 @@ func _build() -> void:
 
 
 func _process(_delta: float) -> void:
+	if _weapon_cd_left > 0.0:
+		_weapon_cd_left = maxf(0.0, _weapon_cd_left - _delta)
+		_weapon_cd.size.y = 48.0 * _weapon_cd_left / _weapon_cd_total
+	if GameManager.is_rabid():
+		_sanity_label.modulate.a = 0.6 + 0.4 * sin(Time.get_ticks_msec() * 0.01)
 	if GameManager.combo > 0:
 		_combo_bar.size.x = 140.0 * clampf(GameManager._combo_timer / GameManager.COMBO_WINDOW, 0.0, 1.0)
 	_update_arrow()
@@ -295,11 +420,18 @@ func _process(_delta: float) -> void:
 
 func _update_arrow() -> void:
 	var level := get_parent() as Level
-	if level == null or not is_instance_valid(level.objective) or not level.objective.visible:
+	var target: Node2D = null
+	if level:
+		if is_instance_valid(level.objective) and level.objective.visible:
+			target = level.objective
+		elif is_instance_valid(level.weapon_pickup):
+			target = level.weapon_pickup
+	if target == null:
 		_arrow.visible = false
 		return
+	_arrow.color = Color(1.0, 0.75, 0.3) if target == level.weapon_pickup else Color(1.0, 0.95, 0.6)
 	var vp := get_viewport()
-	var screen := vp.get_canvas_transform() * level.objective.global_position
+	var screen := vp.get_canvas_transform() * target.global_position
 	var rect := Rect2(Vector2(60, 60), Vector2(1160, 600))
 	if rect.has_point(screen):
 		_arrow.visible = false
@@ -318,6 +450,19 @@ func _update_arrow() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _choice_active:
+		if event.is_action_pressed("move_left") or event.is_action_pressed("ui_left") or event.is_action_pressed("move_up"):
+			_choice_index = 0
+			_highlight_choice()
+			Audio.sfx("sfx_dialogue", 0.0, -8.0)
+		elif event.is_action_pressed("move_right") or event.is_action_pressed("ui_right") or event.is_action_pressed("move_down"):
+			_choice_index = 1
+			_highlight_choice()
+			Audio.sfx("sfx_dialogue", 0.0, -8.0)
+		elif event.is_action_pressed("interact") or event.is_action_pressed("ui_accept"):
+			get_viewport().set_input_as_handled()
+			_pick(_choice_index)
+		return
 	var advance := event.is_action_pressed("interact") or event.is_action_pressed("attack") or event.is_action_pressed("ui_accept")
 	if (_dlg_active or _cut_active) and advance:
 		get_viewport().set_input_as_handled()
@@ -491,12 +636,94 @@ func _on_artifact(info: Dictionary) -> void:
 
 
 func _on_player_died() -> void:
-	Audio.music("", 1.0)
-	Juice.set_screen(0.6, 0.0, 0.8, Color(1, 0.85, 0.85))
-	await get_tree().create_timer(1.2).timeout
-	_over.visible = true
-	_over.modulate.a = 0.0
+	pass   # Deaths leave a grave and you revive (see Level._on_player_died).
+
+
+func show_death(deaths: int) -> void:
+	var msg := "Your echo returns..."
+	if deaths > GameManager.EVIL_AT:
+		msg = "Your echo returns... wrong."
+	_death_label.text = "YOU DIED\n" + msg
+	_death_label.modulate.a = 0.0
 	var t := create_tween()
-	t.tween_property(_over, "modulate:a", 1.0, 0.5)
-	await t.finished
-	_over_ready = true
+	t.tween_property(_death_label, "modulate:a", 1.0, 0.4)
+	t.tween_interval(1.4)
+	t.tween_property(_death_label, "modulate:a", 0.0, 0.5)
+	_refresh_sanity()
+
+
+func _refresh_sanity() -> void:
+	var left := GameManager.sanity()
+	for i in _pips.size():
+		_pips[i].color = Color(0.55, 0.85, 1.0) if i < left else Color(0.15, 0.15, 0.22)
+	if GameManager.is_rabid():
+		_sanity_label.text = "RABID"
+		_sanity_label.add_theme_color_override("font_color", Color(1, 0.25, 0.25))
+		for pip in _pips:
+			pip.color = Color(0.8, 0.1, 0.1)
+	elif left == 0:
+		_sanity_label.add_theme_color_override("font_color", Color(1, 0.55, 0.55))
+
+
+func _on_cooldown(ability: String, remaining: float, total: float) -> void:
+	if ability == "special":
+		_weapon_cd_left = remaining
+		_weapon_cd_total = maxf(total, 0.01)
+
+
+func _on_weapon_changed(id: String) -> void:
+	if id == "" or not WeaponData.ALL.has(id):
+		_weapon_slot.visible = false
+		return
+	var w: Dictionary = WeaponData.ALL[id]
+	_weapon_icon.texture = load(w.icon)
+	_weapon_name.text = w.name
+	_weapon_slot.visible = true
+	_weapon_slot.scale = Vector2(1.4, 1.4)
+	create_tween().tween_property(_weapon_slot, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK)
+
+
+func title_card(title: String, subtitle: String) -> void:
+	_title.text = title
+	_title_sub.text = subtitle
+	letterbox(true)
+	var t := create_tween()
+	t.tween_property(_title, "modulate:a", 1.0, 0.6)
+	t.parallel().tween_property(_title_sub, "modulate:a", 1.0, 0.6).set_delay(0.4)
+	t.tween_interval(2.6)
+	t.tween_property(_title, "modulate:a", 0.0, 0.6)
+	t.parallel().tween_property(_title_sub, "modulate:a", 0.0, 0.6)
+	t.tween_callback(func(): letterbox(false))
+
+
+## Two-option menu. Returns the chosen index. A/D or arrows to move, E or click to pick.
+func choose(question: String, options: Array) -> int:
+	GameManager.input_locked = true
+	_choice_q.text = question
+	for i in _choice_buttons.size():
+		_choice_buttons[i].text = options[i]
+	_choice_index = 0
+	_highlight_choice()
+	_choice_box.visible = true
+	_choice_active = true
+	var picked: int = await _chosen
+	_choice_box.visible = false
+	_choice_active = false
+	await get_tree().create_timer(0.2).timeout
+	GameManager.input_locked = false
+	return picked
+
+
+func _on_choice_button(i: int) -> void:
+	if _choice_active:
+		_pick(i)
+
+
+func _pick(i: int) -> void:
+	Audio.sfx("sfx_ui_confirm", 0.0, -4.0)
+	_chosen.emit(i)
+
+
+func _highlight_choice() -> void:
+	for i in _choice_buttons.size():
+		_choice_buttons[i].modulate = Color(1.3, 1.2, 0.8) if i == _choice_index else Color(0.6, 0.6, 0.7)

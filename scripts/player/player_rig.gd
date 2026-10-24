@@ -35,6 +35,9 @@ var _attack_pose_t := 0.0
 var _swing_tween: Tween
 var _trail_points: Array[Vector2] = []
 var _flash_t := 0.0
+var _special_spr: Sprite2D
+var _rabid_aura: CPUParticles2D
+var base_tint := Color.WHITE
 
 
 func setup(owner_node: Node2D, body_sprite: AnimatedSprite2D, skin_name := "player") -> void:
@@ -42,7 +45,8 @@ func setup(owner_node: Node2D, body_sprite: AnimatedSprite2D, skin_name := "play
 	body = body_sprite
 	skin = skin_name
 	var evil := skin == "evil"
-	body.sprite_frames = Sheet.character(N + ("chars/evil" if evil else "chars/player"))
+	var ally := skin == "ally"
+	body.sprite_frames = Sheet.character(N + ("chars/evil" if evil else ("chars/holo" if ally else "chars/player")))
 	body.scale = Vector2(3, 3)
 	body.position = Vector2(0, -10)
 	body.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -88,6 +92,9 @@ func setup(owner_node: Node2D, body_sprite: AnimatedSprite2D, skin_name := "play
 	if evil:
 		slash_color = Color(2.4, 0.5, 0.6)
 		trail_color = Color(1, 0.3, 0.35)
+	if ally:
+		slash_color = Color(1.2, 2.2, 2.6)
+		trail_color = Color(0.5, 1.0, 1.0)
 	grad.colors = PackedColorArray([Color(trail_color, 0.0), Color(trail_color.r * 1.6, trail_color.g * 1.6, trail_color.b * 1.6, 0.9)])
 	trail.gradient = grad
 	trail.z_index = 25
@@ -96,7 +103,14 @@ func setup(owner_node: Node2D, body_sprite: AnimatedSprite2D, skin_name := "play
 	trail.material = add
 	add_child(trail)
 
-	light = Sheet.make_light(Color(1, 0.35, 0.35) if evil else Color(0.75, 0.9, 1.0), 0.55, 2.4)
+	light = Sheet.make_light(Color(1, 0.35, 0.35) if evil else (Color(0.4, 1.0, 1.0) if ally else Color(0.75, 0.9, 1.0)), 0.7 if ally else 0.55, 2.0 if ally else 2.4)
+	if ally:
+		# A translucent warrior made of mirror light.
+		base_tint = Color(1.3, 1.8, 2.0, 0.55)
+		body.modulate = base_tint
+		sword.modulate = Color(1.4, 2.0, 2.2, 0.75)
+		shield.modulate = Color(1.4, 2.0, 2.2, 0.6)
+		shadow.modulate = Color(0, 0, 0, 0.2)
 	light.position = Vector2(0, -6)
 	add_child(light)
 	_place_sword_sheathed()
@@ -270,6 +284,74 @@ func deflect_fx(at: Vector2) -> void:
 	Juice.fx("shield_blue" if skin == "player" else "shield_yellow", sp, 3.0, 0.0, Color(1.2, 1.45, 1.8))
 	Juice.fx("circle_spark", at, 2.6, 0.0, Color(1.4, 1.7, 2.0))
 	Juice.light_flash(sp, trail_color, 1.5, 1.6, 0.3)
+
+
+## Briefly hold the world weapon (bow drawn, axe swung, wand raised).
+func show_special(tex: Texture2D, kind: String) -> void:
+	if _special_spr == null:
+		_special_spr = Sprite2D.new()
+		_special_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_special_spr.z_index = 3
+		add_child(_special_spr)
+	_special_spr.texture = tex
+	_special_spr.visible = true
+	_special_spr.modulate = Color(1.4, 1.4, 1.4)
+	sword_pivot.visible = false
+	_attack_pose_t = 0.25
+	var t := create_tween()
+	match kind:
+		"flare_bow":
+			_special_spr.position = facing * 18.0 + Vector2(0, -8)
+			_special_spr.rotation = facing.angle() + PI * 0.5
+			_special_spr.scale = Vector2(3.2, 3.2)
+			t.tween_property(_special_spr, "scale", Vector2(3.6, 2.8), 0.06)
+			t.tween_property(_special_spr, "scale", Vector2(3.2, 3.2), 0.12)
+		"hunter_axe":
+			_special_spr.position = Vector2(0, -8)
+			_special_spr.offset = Vector2(0, -6)
+			_special_spr.scale = Vector2(3.4, 3.4)
+			var a := facing.angle() + PI * 0.5
+			_special_spr.rotation = a - 2.0
+			t.tween_property(_special_spr, "rotation", a + 2.0, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_:
+			_special_spr.position = facing * 14.0 + Vector2(0, -14)
+			_special_spr.rotation = facing.angle() + PI * 0.5
+			_special_spr.scale = Vector2(3.0, 3.0)
+			t.tween_property(_special_spr, "position", facing * 22.0 + Vector2(0, -20), 0.12)
+	t.tween_interval(0.12)
+	t.tween_callback(func():
+		_special_spr.visible = false
+		_special_spr.offset = Vector2.ZERO
+		sword_pivot.visible = true)
+
+
+func set_rabid(on: bool) -> void:
+	if on:
+		base_tint = Color(1.4, 0.7, 0.7)
+		body.modulate = base_tint
+		light.color = Color(1, 0.2, 0.2)
+		slash_color = Color(2.6, 0.6, 0.5)
+		if _rabid_aura == null:
+			_rabid_aura = CPUParticles2D.new()
+			_rabid_aura.amount = 30
+			_rabid_aura.lifetime = 0.9
+			_rabid_aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+			_rabid_aura.emission_sphere_radius = 14.0
+			_rabid_aura.gravity = Vector2(0, -70)
+			_rabid_aura.initial_velocity_min = 5.0
+			_rabid_aura.initial_velocity_max = 30.0
+			_rabid_aura.scale_amount_min = 2.0
+			_rabid_aura.scale_amount_max = 4.0
+			_rabid_aura.color = Color(1.6, 0.1, 0.15, 0.7)
+			_rabid_aura.position = Vector2(0, -6)
+			_rabid_aura.z_index = -1
+			add_child(_rabid_aura)
+	else:
+		base_tint = Color.WHITE
+		body.modulate = base_tint
+		if _rabid_aura:
+			_rabid_aura.queue_free()
+			_rabid_aura = null
 
 
 func block_fx() -> void:

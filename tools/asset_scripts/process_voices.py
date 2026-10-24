@@ -113,6 +113,8 @@ FX = {
     "sentinel": lambda x: reverb(comb(x, 140, 0.55), 0.35, 0.6, 1.0),
     "evil": lambda x: reverse_swell(distort(x, 1.6)),
     "narrator": lambda x: reverb(x, 0.35, 0.65, 1.8),
+    "elder": lambda x: reverb(onepole_lp(x, 4500), 0.28, 0.55, 1.0),
+    "reflection": lambda x: reverb(chorus(hp(x, 250)), 0.45, 0.65, 1.4),
 }
 
 n = 0

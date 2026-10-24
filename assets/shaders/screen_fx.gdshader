@@ -10,6 +10,7 @@ uniform float vignette = 0.35;
 uniform float scanlines = 0.0;
 uniform float desaturate = 0.0;
 uniform vec4 tint : source_color = vec4(1.0);
+uniform float invert = 0.0;
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
@@ -36,5 +37,6 @@ void fragment() {
 	}
 	vec2 v = (SCREEN_UV - 0.5) * vec2(1.0, 0.8);
 	col *= 1.0 - vignette * smoothstep(0.25, 0.75, length(v));
+	col = mix(col, vec3(1.0) - col, invert);
 	COLOR = vec4(col * tint.rgb, 1.0);
 }

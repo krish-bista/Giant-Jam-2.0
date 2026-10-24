@@ -14,6 +14,8 @@ $styles = @{
   "sentinel" = @("Microsoft Zira Desktop",  "-15%", "-22%");
   "evil"     = @("Microsoft David Desktop", "-8%",  "-14%");
   "narrator" = @("Microsoft Zira Desktop",  "-20%", "-6%");
+  "elder"    = @("Microsoft David Desktop", "-22%", "-20%");
+  "reflection" = @("Microsoft David Desktop", "-10%", "+4%");
 }
 $fmt = New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(22050, [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen, [System.Speech.AudioFormat.AudioChannel]::Mono)
 $md5 = [System.Security.Cryptography.MD5]::Create()

@@ -29,6 +29,7 @@ var _told_flee := false
 var _orbit := 0.0
 var _airborne := false
 var minions: Array = []
+var _stagger_left := 0.0
 var _hit_frame := -1
 var _hit_source: Node = null
 
@@ -108,7 +109,9 @@ func _build_visuals() -> void:
 			light = Sheet.make_light(Color(1.0, 0.7, 0.4), 0.6, 2.2)
 		"sentinel":
 			_build_dragon()
-			light = Sheet.make_light(Color(0.8, 0.3, 1.0), 1.4, 2.8)
+			light = Sheet.make_light(Color(1.0, 0.25, 0.3), 1.2, 2.6)
+			var eyes := Sheet.make_light(Color(1.0, 0.1, 0.1), 1.8, 0.6)
+			head.add_child(eyes)
 	if sprite.sprite_frames:
 		sprite.play("idle")
 	if light:
@@ -118,7 +121,7 @@ func _build_visuals() -> void:
 func _build_dragon() -> void:
 	sprite.visible = false
 	head = Sprite2D.new()
-	head.texture = load(N + "bosses/dragon_head.png")
+	head.texture = load(N + "bosses/wyrm_head.png")
 	head.scale = Vector2(2.8, 2.8)
 	head.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	head.material = _mat
@@ -127,7 +130,7 @@ func _build_dragon() -> void:
 	for i in 10:
 		var seg := DragonSegment.new()
 		seg.boss = self
-		var tex := "dragon_bodyend" if i == 9 else ("dragon_body1" if i % 2 == 0 else "dragon_body2")
+		var tex := "wyrm_bodyend" if i == 9 else ("wyrm_body1" if i % 2 == 0 else "wyrm_body2")
 		seg.setup(load(N + "bosses/%s.png" % tex), 2.6 - i * 0.07)
 		seg.top_level = true
 		add_child(seg)
@@ -135,7 +138,7 @@ func _build_dragon() -> void:
 		segments.append(seg)
 	for side in [-1, 1]:
 		var w := Sprite2D.new()
-		w.texture = load(N + "bosses/dragon_wing.png")
+		w.texture = load(N + "bosses/wyrm_wing.png")
 		w.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		w.scale = Vector2(2.6 * side, 2.6)
 		w.offset = Vector2(20, -10)
@@ -157,8 +160,20 @@ func _intro() -> void:
 	active = true
 
 
+## Hypno Reverse can't flip a boss, but it reverses its momentum: it reels, stops attacking
+## and takes +50% damage for a moment.
 func flip(_duration: float) -> void:
-	Juice.text_pop(global_position + Vector2(0, -radius), "IMMUNE", Color(1, 0.6, 1.0), 16)
+	reverse_stagger(2.2)
+
+
+func reverse_stagger(seconds: float) -> void:
+	if _dead or not active:
+		return
+	_stagger_left = seconds
+	_pattern_cd = maxf(_pattern_cd, seconds)
+	_knock = (global_position - player().global_position).normalized() * 260.0 if player() else Vector2.ZERO
+	Juice.text_pop(global_position + Vector2(0, -radius * 2), "REVERSED!", Color(1, 0.5, 1.0), 24)
+	Juice.fx("circle_spark", global_position + Vector2(0, -radius * 0.5), 4.0, 0.0, Color(2.0, 0.6, 1.9))
 
 
 func _physics_process(delta: float) -> void:
@@ -167,6 +182,7 @@ func _physics_process(delta: float) -> void:
 	_t += delta
 	_hurt_flash = maxf(0.0, _hurt_flash - delta)
 	_contact_cd = maxf(0.0, _contact_cd - delta)
+	_stagger_left = maxf(0.0, _stagger_left - delta)
 	_update_parts(delta)
 	var p := player()
 	if not active or p == null or (p.has_method("is_dead") and p.is_dead()):
@@ -197,8 +213,10 @@ func _physics_process(delta: float) -> void:
 					move = (move.normalized() + c.normalized() * 1.5).normalized() * speed
 			elif to_p.length() > radius + 40.0:
 				move = to_p.normalized() * speed * (1.2 if _phase2 else 1.0)
+		if _stagger_left > 0.0:
+			move = Vector2.ZERO
 		_pattern_cd -= delta
-		if _pattern_cd <= 0.0 and not _flee_mode:
+		if _pattern_cd <= 0.0 and not _flee_mode and _stagger_left <= 0.0:
 			_run_next_pattern()
 
 	if not _charging and not _airborne:
@@ -342,6 +360,10 @@ func _p_hypno_pulse() -> void:
 
 func _p_volley() -> void:
 	_anim("shoot")
+	var sight := Telegraph.line(get_parent(), _shot_origin(), _aim(_shot_origin()), 900.0, 10.0, 0.45)
+	await sight.fired
+	if _dead:
+		return
 	for i in (5 if _phase2 else 3):
 		if _dead:
 			return
@@ -496,7 +518,7 @@ func take_damage(amount: float, source: Node = null) -> void:
 		return
 	_hit_frame = frame
 	_hit_source = source
-	if _flee_mode:
+	if _flee_mode or _stagger_left > 0.0:
 		amount *= 1.5
 	damaged.emit(amount, source)
 	_hurt_flash = 0.08
@@ -603,5 +625,9 @@ func _update_visual() -> void:
 
 
 func _draw() -> void:
+	if _stagger_left > 0.0:
+		for i in 3:
+			var a0 := _t * 6.0 + i * TAU / 3.0
+			draw_arc(Vector2(0, -radius * 1.6), radius * 0.6, a0, a0 + 1.6, 16, Color(2.2, 0.6, 2.2, 0.9), 4.0, true)
 	if _flee_mode:
 		draw_arc(Vector2(0, -radius * 0.4), radius + 10.0, 0, TAU, 32, Color(1, 0.9, 0.4, 0.8), 3.0, true)

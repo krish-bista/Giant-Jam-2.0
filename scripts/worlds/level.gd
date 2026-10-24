@@ -20,6 +20,8 @@ var camera_follow := true
 var scanlines := 0.0
 var vignette := 0.4
 var glow := true
+var desaturate := 0.0
+var screen_tint := Color.WHITE
 
 var ARENA := Rect2(64, 64, 1152, 592)
 var player: CharacterBody2D
@@ -27,6 +29,9 @@ var ui: GameUI
 var camera: Camera2D
 var alive: Array = []
 var objective: Node2D = null
+var weapon_pickup: Node2D = null
+var ally: ReflectionAlly = null
+var revives_here := true
 var _keepout: Array = []     # [pos, radius] areas where scatter won't place props
 var _rng := RandomNumberGenerator.new()
 
@@ -37,7 +42,7 @@ func _ready() -> void:
 	configure()
 	ARENA = Rect2(Vector2(70, 90), world_size - Vector2(140, 150))
 	Juice.reset_time()
-	Juice.set_screen(vignette, scanlines, 0.0, Color.WHITE)
+	Juice.set_screen(vignette, scanlines, desaturate, screen_tint)
 	_build_ground()
 	_build_walls()
 	_build_lighting()
@@ -66,6 +71,11 @@ func _ready() -> void:
 	Audio.music(music)
 	Audio.ambient(ambient)
 	_build_particles()
+	Events.player_died.connect(_on_player_died)
+	# World weapons belong to their world.
+	if GameManager.weapon != "" and GameManager.weapon_world != GameManager.current_scene:
+		GameManager.weapon = ""
+		Events.weapon_changed.emit("")
 	await get_tree().process_frame
 	build_world()
 	await get_tree().process_frame
@@ -217,6 +227,30 @@ func _build_particles() -> void:
 			p.scale_amount_min = 1.5
 			p.scale_amount_max = 3.0
 			p.color = Color(2.0, 0.8, 2.4, 0.8)
+		"data":
+			p.amount = 120
+			p.lifetime = 2.4
+			p.direction = Vector2(0, 1)
+			p.spread = 0.0
+			p.gravity = Vector2.ZERO
+			p.initial_velocity_min = 120.0
+			p.initial_velocity_max = 260.0
+			p.scale_amount_min = 2.0
+			p.scale_amount_max = 4.0
+			p.color = Color(0.6, 1.8, 2.0, 0.55)
+		"ash":
+			p.amount = 120
+			p.lifetime = 6.0
+			p.direction = Vector2(0.3, 1)
+			p.spread = 30.0
+			p.gravity = Vector2(6, 14)
+			p.initial_velocity_min = 10.0
+			p.initial_velocity_max = 30.0
+			p.angular_velocity_min = -60.0
+			p.angular_velocity_max = 60.0
+			p.scale_amount_min = 1.5
+			p.scale_amount_max = 3.5
+			p.color = Color(0.7, 0.66, 0.72, 0.6)
 		"dust", "snow":
 			p.amount = 70
 			p.lifetime = 6.0
@@ -237,7 +271,13 @@ func _build_particles() -> void:
 	set_meta("ambient_particles", p)
 
 
+var flicker_lights: Array = []
+
+
 func _physics_process(_delta: float) -> void:
+	for l in flicker_lights:
+		if is_instance_valid(l):
+			l.energy = l.get_meta("base", 1.0) * (0.35 if randf() < 0.06 else randf_range(0.8, 1.1))
 	if has_meta("ambient_particles") and is_instance_valid(camera):
 		var p: CPUParticles2D = get_meta("ambient_particles")
 		p.global_position = camera.get_screen_center_position() + Vector2(0, -80 if particles == "rain" else 0)
@@ -446,6 +486,90 @@ func add_chest(pos: Vector2) -> Interactable:
 		else:
 			Pickup.spawn_heal(self, pos + Vector2(0, 40), 25.0))
 	return c
+
+
+# ---------------- death, graves, revives ----------------
+func _on_player_died() -> void:
+	if not revives_here:
+		return
+	var pos := player.global_position
+	GameManager.deaths += 1
+	GameManager.break_combo()
+	var grave := Prop.make("grave_mound", pos, {"collide": false, "light": Color(0.6, 0.8, 1.0), "energy": 0.6, "light_scale": 0.8})
+	add_child(grave)
+	grave.scale = Vector2(1, 0.1)
+	create_tween().tween_property(grave, "scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_BACK)
+	Audio.sfx("sfx_grave", 0.0, -2.0)
+	Juice.set_screen(0.7, 0.0, 0.85, Color(0.9, 0.9, 1.0))
+	ui.show_death(GameManager.deaths)
+	await get_tree().create_timer(2.4, false).timeout
+	if not is_instance_valid(player):
+		return
+	Juice.set_screen(vignette, scanlines, desaturate, screen_tint)
+	player.revive(pos + Vector2(0, 44), 0.6)
+	Events.player_revived.emit(GameManager.deaths)
+	if GameManager.deaths == 1:
+		ui.show_subtitle("An echo can't die. It only repeats.", Color(0.9, 0.9, 1.0))
+		var l := Voice.say("An echo can't die. It only repeats.", "stranger")
+		await wait(maxf(l, 1.5) + 0.3)
+		ui.show_subtitle("But every return leaves less of you, and more of your reflection.", Color(0.9, 0.9, 1.0))
+		Voice.say("But every return leaves less of you, and more of your reflection.", "stranger")
+	elif GameManager.deaths == GameManager.EVIL_AT:
+		ui.show_subtitle("Careful. There's more reflection in you than you now.", Color(1, 0.6, 0.6))
+		Voice.say("Careful. There's more reflection in you than you now.", "stranger")
+	elif GameManager.deaths == GameManager.RABID_AT:
+		_go_rabid()
+	if GameManager.is_rabid():
+		Juice.set_screen(0.6, scanlines, 0.25, Color(1.1, 0.85, 0.85))
+
+
+func _go_rabid() -> void:
+	Events.announce.emit("SANITY LOST")
+	Voice.say("SANITY LOST", "system")
+	Audio.sfx("sfx_heartbeat", 0.0, 2.0)
+	Juice.flash(Color(1, 0, 0, 0.5), 0.6)
+	Juice.chroma(0.03)
+	player.set_rabid(true)
+	await wait(1.6)
+	say_line("Something's wrong with me... I can't stop.", "you", Color(1, 0.5, 0.5))
+
+
+# ---------------- ally, weapons, titles, objectives ----------------
+## Your reflection steps out of a mirror to fight beside you (not while rabid).
+func summon_ally(first_line := false) -> void:
+	if GameManager.is_rabid() or is_instance_valid(ally):
+		return
+	ally = ReflectionAlly.new()
+	ally.global_position = player.global_position + Vector2(-60, 10)
+	add_child(ally)
+	var line := "I'm your reflection. The part of you that still wants to save them. Let's go." if first_line else "I'm still with you."
+	ui.show_subtitle(line, Color(0.6, 0.95, 1.0))
+	Voice.say(line, "reflection")
+
+
+func place_weapon(id: String, pos: Vector2) -> void:
+	if GameManager.weapon == id:
+		return
+	var w := WeaponPickup.new()
+	w.weapon_id = id
+	w.position = pos
+	add_child(w)
+	weapon_pickup = w
+	keepout(pos, 90.0)
+
+
+func title_card(title: String, subtitle: String, narration: String) -> void:
+	ui.title_card(title, subtitle)
+	Voice.say(narration, "narrator")
+
+
+func set_objective(text: String) -> void:
+	Events.objective_changed.emit(text)
+
+
+func _clear_prompt_later(seconds: float) -> void:
+	await wait(seconds)
+	Events.tutorial_prompt.emit("")
 
 
 func player_alive() -> bool:

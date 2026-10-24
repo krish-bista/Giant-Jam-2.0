@@ -48,7 +48,7 @@ func build_world() -> void:
 	moon.position = Vector2(150, 160)
 	add_child(moon)
 
-	helmet = add_interactable(P + "props/helmet_glow.png" if ResourceLoader.exists(P + "props/helmet_glow.png") else "res://assets/props/prop_helmet.png", Vector2(648, 300), "[E] Put on the helmet", 90.0, 1.0)
+	helmet = add_interactable(P + "props/vr_helmet.png", Vector2(648, 296), "[E] Put on the helmet", 90.0, 3.0)
 	helmet.enabled = false
 	helmet.light_color = Color(0.5, 0.95, 1.0)
 	helmet.used.connect(_on_helmet)
@@ -88,7 +88,8 @@ func run() -> void:
 	await wait(1.2)
 	GameManager.input_locked = false
 	await ui.say(["...", "Where am I?"], "You", "you", P + "chars/player_face.png")
-	prompt("WASD to move. [E] to talk.")
+	Events.tutorial_prompt.emit("WASD to move. [E] to talk.")
+	set_objective("Talk to the stranger")
 	objective = npc
 
 
@@ -108,14 +109,16 @@ func _on_talk() -> void:
 	_talked = true
 	await ui.say([
 		"You're awake. Good. Don't try to remember. Not yet.",
-		"Three days ago the sky cracked open. They came through.",
-		"Time is breaking. The pieces are scattered across it.",
-		"Only you can walk between them. Don't ask me why.",
+		"Something broke time. Now it runs backwards, like a reflection in a mirror.",
+		"In a reversed world the hunter becomes the hunted, and every blow comes back to the one who struck it.",
+		"This helmet lets you walk the broken timelines, back to the moment it all cracked.",
+		"Find the crack. Close it. Whatever it costs.",
 		"Put this on.",
 	], "Stranger", "stranger", P + "chars/npc_face.png")
 	helmet.enabled = true
 	helmet.glow = true
 	objective = helmet
+	set_objective("Put on the helmet")
 	Events.tutorial_prompt.emit("[E] Put on the helmet")
 
 
@@ -130,4 +133,4 @@ func _on_helmet() -> void:
 	Juice.flash(Color(0.8, 1, 1, 0.9), 0.8)
 	Juice.shake(4.0, 0.5)
 	await wait(0.6)
-	GameManager.go_to_scene("tutorial")
+	GameManager.go_to_scene("tutorial", "mirror")
