@@ -18,6 +18,7 @@ var _stuck_t := 0.0
 var _jitter := Vector2.ZERO
 var _done := false
 var _artifacts_logged := 0
+var _used_once := {}
 var _shot_t := 3.0
 var _shot_n := 0
 
@@ -85,7 +86,7 @@ func _physics_process(delta: float) -> void:
 	if shots != "":
 		_shot_t -= delta
 		if _shot_t <= 0.0:
-			_shot_t = 9.0
+			_shot_t = float(OS.get_environment("ECHO_BOT_SHOT_EVERY")) if OS.get_environment("ECHO_BOT_SHOT_EVERY") != "" else 9.0
 			_shot_n += 1
 			var img := get_viewport().get_texture().get_image()
 			img.save_png("%s/shot_%03d_%s.png" % [shots, _shot_n, scene])
@@ -184,15 +185,19 @@ func _physics_process(delta: float) -> void:
 	# Interactables (skip the door, the table and "keep fighting").
 	if target == null:
 		for n in root.get_children():
-			if n is Interactable and n.enabled and n.prompt != "" and not ("Door" in n.prompt) and not ("Keep" in n.prompt):
+			if n is Interactable and n.enabled and n.prompt != "" and not ("Door" in n.prompt) and not ("Keep" in n.prompt) and not _used_once.has(n.get_instance_id()):
 				target = n
 				want = 30.0
 				break
 
+	if target == null and root is Level and is_instance_valid(root.objective) and root.objective.visible:
+		target = root.objective
+		want = 40.0
+
 	if target == null:
 		# Nothing to do: walk in a circle and dash now and then (covers the tutorial's move step).
 		var t := Time.get_ticks_msec() * 0.001
-		_move(Vector2(cos(t), sin(t)) + (Vector2(640, 360) - p.global_position) * 0.004)
+		_move(Vector2(cos(t), sin(t)) + ((root.world_size * 0.5 if root is Level else Vector2(640, 360)) - p.global_position) * 0.002)
 		if _dash_t <= 0.0:
 			_dash_t = 2.0
 			_tap("dash")
@@ -215,6 +220,8 @@ func _physics_process(delta: float) -> void:
 	if target is Interactable and to_t.length() <= target.reach - 5.0 and _tap_t <= 0.0:
 		_tap_t = 0.4
 		_tap("interact")
+		if "Read" in target.prompt:
+			_used_once[target.get_instance_id()] = true
 
 	if enemy and to_t.length() < want + 30.0 and _attack_t <= 0.0 and _block_left <= 0.0:
 		_attack_t = 0.2

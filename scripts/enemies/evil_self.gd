@@ -1,7 +1,7 @@
 class_name EvilSelf
 extends Enemy
-## The final boss: you, reversed. Copies your stats and artifacts, blocks and reflects,
-## and gets stronger every time you hit it. You can't win by fighting.
+## The final boss: you, reversed. Same rig as the hero (red/black), copies your stats and
+## artifacts, blocks and reflects, and gets stronger every time you hit it. You can't win by fighting.
 
 signal ready_for_ending
 
@@ -12,15 +12,15 @@ var hits_taken := 0
 var fight_time := 0.0
 var prompt_shown := false
 var frozen := false
+var rig: PlayerRig
 var _blocking := false
 var _block_t := 1.5
 var _attack_t := 1.2
-var _slash := 0.0
-var _slash_dir := Vector2.RIGHT
+var _aura: CPUParticles2D
 
 
 func setup_evil() -> EvilSelf:
-	cfg = {"tex": "res://assets/characters/mirror_evil_player.png", "hp": 9999.0, "radius": 14.0, "state": "chase"}
+	cfg = {"hp": 9999.0, "radius": 14.0, "state": "chase"}
 	_apply_cfg()
 	var s: Dictionary = GameManager.stats
 	max_health = s.max_health
@@ -31,28 +31,58 @@ func setup_evil() -> EvilSelf:
 	return self
 
 
+func _build_visuals() -> void:
+	sprite = AnimatedSprite2D.new()
+	_mat = Sheet.sprite_material()
+	add_child(sprite)
+	rig = PlayerRig.new()
+	add_child(rig)
+	rig.setup(self, sprite, "evil")
+	rig.draw_sword()
+	shadow = rig.shadow
+	_aura = CPUParticles2D.new()
+	_aura.amount = 24
+	_aura.lifetime = 1.0
+	_aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	_aura.emission_sphere_radius = 16.0
+	_aura.direction = Vector2.UP
+	_aura.spread = 25.0
+	_aura.gravity = Vector2(0, -60)
+	_aura.initial_velocity_min = 10.0
+	_aura.initial_velocity_max = 40.0
+	_aura.scale_amount_min = 2.0
+	_aura.scale_amount_max = 4.0
+	_aura.color = Color(1.4, 0.1, 0.2, 0.7)
+	_aura.z_index = -1
+	add_child(_aura)
+
+
 func _ready() -> void:
 	super._ready()
 	add_to_group("boss")
 	Events.boss_intro.emit("YOU", "You built me. Every artifact. Every kill.")
 	Events.boss_health_changed.emit("YOU", health, max_health)
-	Audio.sfx("sfx_boss_roar", 0.0, -6.0)
-	await get_tree().create_timer(1.6, false).timeout
+	Voice.say("You built me. Every artifact. Every kill.", "evil")
+	Audio.sfx("sfx_boss_roar", 0.0, -6.0, 0.8)
+	await get_tree().create_timer(1.8, false).timeout
 	active = true
 
 
 func flip(_duration: float) -> void:
 	Events.subtitle.emit("I know that trick. I am that trick.", Color(1, 0.5, 0.5))
+	Voice.say("I know that trick. I am that trick.", "evil")
 
 
 func _physics_process(delta: float) -> void:
 	var p := player()
+	var to_p := (p.global_position - global_position) if p else Vector2.DOWN
+	if rig:
+		rig.set_blocking(_blocking and active and not frozen, false)
+		rig.update(to_p, velocity, delta)
 	if frozen or not active or p == null:
-		_update_visual()
-		queue_redraw()
+		velocity = Vector2.ZERO
 		return
 	fight_time += delta
-	_slash = maxf(0.0, _slash - delta)
 	_hurt_flash = maxf(0.0, _hurt_flash - delta)
 	_check_prompt(p)
 
@@ -61,22 +91,19 @@ func _physics_process(delta: float) -> void:
 		_blocking = not _blocking
 		_block_t = randf_range(0.8, 1.6)
 
-	var to_p := p.global_position - global_position
 	var move := Vector2.ZERO
 	if _winding:
 		_wind_left -= delta
 		if _wind_left <= 0.0:
 			_winding = false
-			_slash = 0.15
-			_slash_dir = to_p.normalized()
-			Audio.sfx("sfx_sword_swing", 0.1, -4.0)
-			if to_p.length() <= 70.0:
+			rig.swing(to_p, randi() % 2)
+			if to_p.length() <= 75.0:
 				p.take_damage(damage, self)
 	else:
 		_attack_t -= delta
-		if to_p.length() > 50.0:
+		if to_p.length() > 52.0:
 			move = to_p.normalized() * speed
-		if _attack_t <= 0.0 and to_p.length() < 90.0:
+		if _attack_t <= 0.0 and to_p.length() < 95.0 and not _blocking:
 			_attack_t = maxf(0.6, 1.3 - hits_taken * 0.05)
 			_winding = true
 			_wind_left = 0.35
@@ -84,8 +111,6 @@ func _physics_process(delta: float) -> void:
 	_knock = _knock.move_toward(Vector2.ZERO, 900.0 * delta)
 	move_and_slide()
 	global_position = global_position.clamp(arena.position, arena.end)
-	_update_visual()
-	queue_redraw()
 
 
 func _check_prompt(p: Node2D) -> void:
@@ -100,29 +125,32 @@ func _check_prompt(p: Node2D) -> void:
 func take_damage(amount: float, source: Node = null) -> void:
 	if not active or frozen or amount <= 0.0:
 		return
-	var from_front := true
-	if source is Node2D and is_instance_valid(source):
-		from_front = true
 	# Blocks and reflects, like you.
-	if _blocking and from_front and source != null and source.has_method("take_damage") and not source.get_meta("reflecting", false) and not _winding:
-		Audio.sfx("sfx_reflect", 0.05, -4.0)
-		Juice.burst(global_position, Color(1, 0.3, 0.3), 14, 200.0)
+	if _blocking and source != null and source.has_method("take_damage") and not source.get_meta("reflecting", false) and not _winding:
+		Audio.sfx("sfx_deflect", 0.05, -3.0, 0.85)
+		rig.deflect_fx(global_position)
+		Juice.chroma(0.01)
 		set_meta("reflecting", true)
 		source.take_damage(amount * GameManager.stats.reflect_power, self)
 		set_meta("reflecting", false)
 		Events.subtitle.emit("Mirror.", Color(1, 0.5, 0.5))
+		Voice.say("Mirror.", "evil")
 		return
 	# Gets stronger every hit, and the damage doesn't stick.
 	hits_taken += 1
-	_hurt_flash = 0.1
-	Audio.sfx("sfx_hit", 0.1, -3.0)
-	Juice.number(global_position, amount, Color(1, 0.4, 0.4))
-	Juice.burst(global_position, Color(1, 0.2, 0.25), 10, 160.0)
+	rig.hurt_flash()
+	Audio.sfx("sfx_hit_heavy", 0.1, -3.0)
+	Juice.number(global_position, amount, Color(1, 0.4, 0.4), true)
+	Juice.fx("cut_x", global_position, 2.4, randf() * TAU, Color(2.0, 0.4, 0.5))
+	_knock = (global_position - (source as Node2D).global_position).normalized() * 120.0 if source is Node2D else Vector2.ZERO
 	health = maxf(1.0, health - amount)
 	Events.boss_health_changed.emit("YOU", health, max_health)
 	damage *= 1.15
 	speed *= 1.05
-	Events.subtitle.emit(TAUNTS[(hits_taken - 1) % TAUNTS.size()], Color(1, 0.5, 0.5))
+	_aura.amount = mini(80, _aura.amount + 8)
+	var taunt: String = TAUNTS[(hits_taken - 1) % TAUNTS.size()]
+	Events.subtitle.emit(taunt, Color(1, 0.5, 0.5))
+	Voice.say(taunt, "evil")
 	var heal_tween := create_tween()
 	heal_tween.tween_interval(0.6)
 	heal_tween.tween_method(func(v: float):
@@ -131,24 +159,8 @@ func take_damage(amount: float, source: Node = null) -> void:
 
 
 func _update_visual() -> void:
-	if sprite == null:
-		return
-	var c := Color.WHITE
-	if _winding:
-		c = Color(1.8, 0.6, 0.6)
-	if _hurt_flash > 0.0:
-		c = Color(3, 3, 3)
-	sprite.modulate = c
-	var p := player()
-	if p:
-		sprite.flip_h = p.global_position.x < global_position.x
+	pass
 
 
 func _draw() -> void:
-	if _blocking and active and not frozen:
-		var p := player()
-		var a := (p.global_position - global_position).angle() if p else 0.0
-		draw_arc(Vector2.ZERO, 26.0, a - 1.2, a + 1.2, 24, Color(1, 0.3, 0.35, 0.7), 6.0, true)
-	if _slash > 0.0:
-		var a2 := _slash_dir.angle()
-		draw_arc(Vector2.ZERO, 50.0, a2 - 0.9, a2 + 0.9, 24, Color(1, 0.3, 0.3, _slash / 0.15), 8.0, true)
+	pass

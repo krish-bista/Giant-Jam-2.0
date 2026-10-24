@@ -40,8 +40,13 @@ func _ready() -> void:
 	_spr = Sprite2D.new()
 	_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	if kind == "heal":
-		_spr.texture = load("res://assets/props/prop_heal_orb.png")
+		_spr.texture = load("res://assets/ninja/ui/heart.png")
+		_spr.scale = Vector2(2.5, 2.5)
+		var l := Sheet.make_light(Color(1, 0.3, 0.4), 0.6, 0.6)
+		add_child(l)
 	else:
+		var l2 := Sheet.make_light(Color(1, 0.85, 0.4), 0.9, 0.9)
+		add_child(l2)
 		_spr.texture = load(ArtifactData.icon_path(artifact_id))
 		_spr.scale = Vector2(1.3, 1.3)
 	add_child(_spr)

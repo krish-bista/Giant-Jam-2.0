@@ -22,6 +22,10 @@ var hypno_unlocked := false
 var input_locked := false
 var current_scene := ""
 var run_time := 0.0
+var combo := 0
+var best_combo := 0
+var _combo_timer := 0.0
+const COMBO_WINDOW := 2.5
 
 var _snapshot := {}
 var _switching := false
@@ -49,6 +53,36 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not get_tree().paused:
 		run_time += delta / maxf(Engine.time_scale, 0.01)
+		if combo > 0:
+			_combo_timer -= delta
+			if _combo_timer <= 0.0:
+				break_combo()
+
+
+## Combo: every hit you land adds to it; it decays after a short pause and breaks when you get hit.
+func add_combo(amount := 1) -> void:
+	var before := combo
+	combo += amount
+	best_combo = maxi(best_combo, combo)
+	_combo_timer = COMBO_WINDOW
+	Events.combo_changed.emit(combo)
+	for tier in [10, 25, 50]:
+		if before < tier and combo >= tier:
+			Audio.sfx("sfx_combo_3", 0.0, -2.0)
+			return
+	Audio.sfx("sfx_combo_%d" % (1 + mini(combo / 10, 1)), 0.05, -12.0)
+
+
+func break_combo() -> void:
+	if combo == 0:
+		return
+	combo = 0
+	Events.combo_changed.emit(0)
+
+
+## Damage multiplier from the current combo (+1% per hit, up to +50%).
+func combo_bonus() -> float:
+	return 1.0 + minf(combo, 50) * 0.01
 
 
 func _detect_start_scene() -> void:
@@ -71,6 +105,8 @@ func reset_run() -> void:
 	hypno_unlocked = false
 	input_locked = false
 	run_time = 0.0
+	combo = 0
+	best_combo = 0
 
 
 ## The one scene switch everybody uses.
@@ -85,7 +121,10 @@ func go_to_scene(scene_name: String) -> void:
 	t.tween_property(_fade, "modulate:a", 1.0, 0.35)
 	await t.finished
 	Engine.time_scale = 1.0
+	Juice.reset_time()
+	Voice.stop()
 	get_tree().paused = false
+	combo = 0
 	current_scene = scene_name
 	get_tree().change_scene_to_file(SCENES[scene_name])
 	await get_tree().process_frame

@@ -1,5 +1,6 @@
 extends CharacterBody2D
-## Player: WASD + dash, Divine Sword, Mirror Shield (perfect reflect), Hypno Reverse.
+## Player: WASD + dash, Divine Sword (3-hit combo, spin finisher, dash lunge, riposte crit),
+## Mirror Shield (perfect reflect bounces attacks back), Hypno Reverse.
 ## Levels call setup_for_level() to turn on game rules (item gating, i-frames, saved stats).
 ## Without it the player behaves exactly like Krish's original (his tests rely on that).
 
@@ -23,14 +24,18 @@ signal hurt(amount: float, source: Variant)
 const HYPNO_RANGE := 150.0
 const HYPNO_ARC := 70.0
 const HYPNO_COOLDOWN := 12.0
+const CHAIN_WINDOW := 0.6
+const RIPOSTE_WINDOW := 1.2
+const LUNGE_WINDOW := 0.25
 
 var health: float = 100.0
 var facing_direction: Vector2 = Vector2.RIGHT
 var controls_reversed: bool = false
-
-## Game rules (off by default; levels switch them on)
 var in_game := false
 var hurt_iframes := 0.0
+## Test hook for the playtest bot (aims without a mouse). Zero = use the mouse.
+var aim_override := Vector2.ZERO
+var rig: PlayerRig
 
 var _dash_direction: Vector2 = Vector2.RIGHT
 var _dash_time_left: float = 0.0
@@ -43,8 +48,11 @@ var _iframes_left := 0.0
 var _hypno_cooldown_left := 0.0
 var _swing_count := 0
 var _reverse_left := 0.0
-## Test hook for the playtest bot (aims without a mouse). Zero = use the mouse.
-var aim_override := Vector2.ZERO
+var _chain := 0
+var _last_swing := -10.0
+var _last_dash_end := -10.0
+var _riposte_until := -10.0
+var _now := 0.0
 
 @onready var _visual: Node2D = $Visual
 @onready var _sword = $DivineSword
@@ -53,6 +61,10 @@ var aim_override := Vector2.ZERO
 
 func _ready() -> void:
 	health = max_health
+	if _visual is AnimatedSprite2D:
+		rig = PlayerRig.new()
+		add_child(rig)
+		rig.setup(self, _visual, "player")
 	_update_facing()
 
 
@@ -60,6 +72,7 @@ func _ready() -> void:
 func setup_for_level() -> void:
 	in_game = true
 	hurt_iframes = 0.5
+	_sword.show_arc = false
 	sync_stats()
 	health = clampf(GameManager.health, 1.0, max_health)
 	_emit_health()
@@ -123,9 +136,12 @@ func _set_shield_held(held: bool) -> void:
 	_sword.attacks_enabled = not held and not _dead
 	if held:
 		_attack_requested = false
+	if rig:
+		rig.set_blocking(held, _shield.is_perfect())
 
 
 func _physics_process(delta: float) -> void:
+	_now += delta
 	_update_facing()
 	_dash_cooldown_left = maxf(0.0, _dash_cooldown_left - delta)
 	_iframes_left = maxf(0.0, _iframes_left - delta)
@@ -135,6 +151,10 @@ func _physics_process(delta: float) -> void:
 		if _reverse_left <= 0.0:
 			controls_reversed = false
 	_update_blink()
+	if rig:
+		rig.set_blocking(_shield.is_held, _shield.is_perfect())
+		rig.dashing = _dash_time_left > 0.0
+		rig.update(facing_direction, velocity, delta)
 
 	if _attack_requested:
 		_attack_requested = false
@@ -163,6 +183,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		_dash_time_left = maxf(0.0, _dash_time_left - delta)
 		if _dash_time_left == 0.0:
+			_last_dash_end = _now
 			dash_ended.emit()
 		return
 
@@ -172,16 +193,64 @@ func _physics_process(delta: float) -> void:
 
 
 func _swing() -> void:
-	var amount: float = damage
-	if in_game and GameManager.has_flag("echo_blade"):
+	if not in_game:
+		if _sword.try_attack(facing_direction, damage, self):
+			swung.emit()
+		return
+	# Pull the sword out first if it's on the back (fast, then the swing follows).
+	if rig and rig.sheathed:
+		var t := rig.draw_sword()
+		await get_tree().create_timer(t, false).timeout
+	var kind := 0
+	if _now - _last_dash_end < LUNGE_WINDOW:
+		kind = 3
+	else:
+		_chain = (_chain + 1) % 3 if _now - _last_swing < CHAIN_WINDOW else 0
+		kind = _chain
+	var crit := _now < _riposte_until
+	var amount: float = damage * GameManager.combo_bonus()
+	if GameManager.has_flag("echo_blade"):
 		_swing_count += 1
 		if _swing_count % 4 == 0:
 			amount *= 2.0
-	if _sword.try_attack(facing_direction, amount, self):
+	var arc := -1.0
+	var bonus := 0.0
+	match kind:
+		2:
+			amount *= 1.6
+			arc = 360.0
+			bonus = 20.0
+		3:
+			amount *= 1.3
+			bonus = 25.0
+			velocity = facing_direction * 520.0
+			move_and_slide()
+	if crit:
+		amount *= 2.0
+	if _sword.try_attack(facing_direction, amount, self, arc, bonus, 0.75 if kind < 2 else 1.1):
+		_last_swing = _now
 		swung.emit()
-		if in_game:
-			Audio.sfx("sfx_sword_swing", 0.12, -4.0)
-			Events.ability_cooldown.emit("sword", _sword.cooldown, _sword.cooldown)
+		if rig:
+			rig.swing(facing_direction, kind, crit)
+		Events.ability_cooldown.emit("sword", _sword.cooldown, _sword.cooldown)
+		if crit and _sword.last_hits > 0:
+			_riposte_until = -10.0
+			Audio.sfx("sfx_crit", 0.0, -2.0)
+			Juice.text_pop(global_position + facing_direction * 40.0, "CRIT!", Color(1, 0.85, 0.3), 24)
+			Juice.hitstop(0.08)
+		if kind == 2 and _sword.last_hits > 0:
+			Juice.shake(5.0, 0.35)
+
+
+## Called by projectiles before they hurt the player. Returns true if bounced back.
+func try_deflect_projectile(projectile: Node2D) -> bool:
+	if _dead or not _shield.is_held or not _shield.is_perfect():
+		return false
+	if not _shield.blocks_source(projectile, facing_direction):
+		return false
+	blocked.emit(true)
+	_perfect_deflect_fx(projectile.global_position)
+	return true
 
 
 func take_damage(amount: float, source: Variant = null) -> void:
@@ -196,10 +265,7 @@ func take_damage(amount: float, source: Variant = null) -> void:
 			_shield.flash_perfect()
 			blocked.emit(true)
 			if in_game:
-				Audio.sfx("sfx_reflect", 0.05, -2.0)
-				Juice.flash(Color(0.8, 1.0, 1.0, 0.35), 0.12)
-				Juice.hitstop(0.06)
-				Juice.burst(global_position + facing_direction * 24.0, Color(0.7, 1.0, 1.0), 16, 220.0)
+				_perfect_deflect_fx((source as Node2D).global_position if source is Node2D else global_position)
 			# Cooperate with the team metadata contract, and also stop reentrant
 			# hits from reflectors that do not implement that contract themselves.
 			if source.has_method("take_damage") and not source.get_meta("reflecting", false):
@@ -220,7 +286,9 @@ func take_damage(amount: float, source: Variant = null) -> void:
 		damage_taken *= _shield.damage_multiplier
 		blocked.emit(false)
 		if in_game:
-			Audio.sfx("sfx_shield_block")
+			Audio.sfx("sfx_block", 0.08, -2.0)
+			if rig:
+				rig.block_fx()
 
 	hurt.emit(damage_taken, source)
 	var previous_health := health
@@ -229,10 +297,16 @@ func take_damage(amount: float, source: Variant = null) -> void:
 		_emit_health()
 	if in_game:
 		_iframes_left = hurt_iframes
-		Audio.sfx("sfx_player_hurt", 0.1, -3.0)
+		GameManager.break_combo()
+		Audio.sfx("sfx_player_hurt", 0.1, -2.0)
 		Juice.shake(7.0, 0.5)
 		Juice.flash(Color(1, 0.1, 0.15, 0.22), 0.18)
-		Juice.number(global_position, damage_taken, Color(1, 0.4, 0.4))
+		Juice.number(global_position, damage_taken, Color(1, 0.4, 0.4), true)
+		if rig:
+			rig.hurt_flash()
+		if source is Node2D and is_instance_valid(source):
+			velocity = (global_position - (source as Node2D).global_position).normalized() * 300.0
+			move_and_slide()
 		if GameManager.has_flag("heal_on_hurt") and health > 0.0:
 			var back := damage_taken * 0.25
 			get_tree().create_timer(2.0).timeout.connect(func(): if is_instance_valid(self): heal(back, false))
@@ -243,8 +317,27 @@ func take_damage(amount: float, source: Variant = null) -> void:
 		died.emit(source)
 		if in_game:
 			Juice.burst(global_position, Color(0.75, 0.95, 1.0), 30, 260.0, 4.0)
+			Juice.fx("smoke_circular", global_position, 4.0)
 			_visual.visible = false
+			if rig:
+				rig.visible = false
 			Events.player_died.emit()
+
+
+func _perfect_deflect_fx(at: Vector2) -> void:
+	_riposte_until = _now + RIPOSTE_WINDOW
+	GameManager.add_combo(3)
+	Audio.sfx("sfx_deflect", 0.04, 1.0)
+	Audio.sfx("sfx_reflect", 0.05, -10.0, 1.3)
+	Juice.hitstop(0.07)
+	Juice.slow_pulse(0.3, 0.2)
+	Juice.shockwave(global_position + facing_direction * 20.0, 0.05, 0.5)
+	Juice.chroma(0.014)
+	Juice.zoom_punch(0.06)
+	Juice.flash(Color(0.7, 1.0, 1.0, 0.25), 0.15)
+	Juice.text_pop(global_position + Vector2(0, -20), "REFLECT!", Color(0.6, 1.0, 1.0), 24, 46.0, 0.8)
+	if rig:
+		rig.deflect_fx(at)
 
 
 func heal(amount: float, with_effects := true) -> void:
@@ -255,6 +348,7 @@ func heal(amount: float, with_effects := true) -> void:
 	if with_effects and in_game:
 		Audio.sfx("sfx_heal", 0.05, -6.0)
 		Juice.number(global_position, amount, Color(0.5, 1, 0.6))
+		Juice.fx("circle_white", global_position, 2.5, 0.0, Color(0.6, 1.6, 0.8))
 
 
 func reverse_controls(seconds: float) -> void:
@@ -298,13 +392,15 @@ func _show_hypno_cone() -> void:
 		var a := -half + (2.0 * half) * i / 12.0
 		pts.append(Vector2.RIGHT.rotated(a) * HYPNO_RANGE)
 	cone.polygon = pts
-	cone.color = Color(1.0, 0.3, 0.85, 0.45)
+	cone.color = Color(1.4, 0.4, 1.3, 0.45)
 	cone.rotation = facing_direction.angle()
 	cone.z_index = -1
 	add_child(cone)
 	var t := cone.create_tween()
 	t.tween_property(cone, "modulate:a", 0.0, 0.4)
 	t.tween_callback(cone.queue_free)
+	Juice.fx("aura", global_position + facing_direction * 70.0, 4.0, 0.0, Color(2.0, 0.6, 1.8))
+	Juice.light_flash(global_position + facing_direction * 60.0, Color(1, 0.3, 0.9), 2.0, 2.4, 0.4)
 
 
 func _start_dash(movement_input: Vector2) -> void:
@@ -315,17 +411,17 @@ func _start_dash(movement_input: Vector2) -> void:
 	_dash_cooldown_left = dash_cooldown
 	dash_started.emit(_dash_direction)
 	if in_game:
-		Audio.sfx("sfx_dash", 0.1, -8.0)
+		Audio.sfx("sfx_dash", 0.1, -6.0)
+		Juice.fx("smoke", global_position + Vector2(0, 10), 1.8, 0.0, Color(1, 1, 1, 0.6), -1)
 
 
 func _update_blink() -> void:
 	if not is_instance_valid(_visual):
 		return
+	var a := 1.0
 	if _iframes_left > 0.0:
-		_visual.modulate.a = 0.35 if int(_iframes_left * 20.0) % 2 == 0 else 1.0
-	else:
-		_visual.modulate.a = 1.0
-	_visual.modulate = Color(1.0, 0.6, 1.0, _visual.modulate.a) if controls_reversed else Color(1, 1, 1, _visual.modulate.a)
+		a = 0.35 if int(_iframes_left * 20.0) % 2 == 0 else 1.0
+	_visual.modulate = Color(1.0, 0.6, 1.0, a) if controls_reversed else Color(1, 1, 1, a)
 
 
 func _update_facing() -> void:
