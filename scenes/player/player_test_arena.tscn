@@ -1,6 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
+
+[ext_resource type="PackedScene" path="res://scenes/player/training_dummy.tscn" id="2_dummy"]
 
 [sub_resource type="RectangleShape2D" id="WallTop"]
 size = Vector2(1280, 64)
@@ -66,3 +68,6 @@ position = Vector2(180, 0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/CenterObstacle"]
 shape = SubResource("Obstacle")
+
+[node name="TrainingDummy" parent="." instance=ExtResource("2_dummy")]
+position = Vector2(0, -110)
