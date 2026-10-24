@@ -54,7 +54,7 @@ The ids and values are in `docs/balance/5_artifacts.tsv`.
 ## 6. Groups
 `player`, `enemy`, `boss`, `damageable`, `flipped` (enemies under Hypno Reverse), `portal`, `pickup`
 
-## 7. Physics layers (Azad sets the names in `project.godot`)
+## 7. Physics layers (names already set in `project.godot`)
 | # | Name | # | Name |
 |---|---|---|---|
 | 1 | world | 5 | enemy_attack |
@@ -62,7 +62,7 @@ The ids and values are in `docs/balance/5_artifacts.tsv`.
 | 3 | enemy | 7 | portal |
 | 4 | player_attack | 8 | flipped_attack (hits enemies) |
 
-## 8. Input actions (Azad adds them to `project.godot`)
+## 8. Input actions (already in `project.godot`)
 `move_up/down/left/right` WASD · `attack` left mouse · `block` right mouse (hold) · `dash` Space · `hypno` Q · `interact` E · `pause` Esc
 
 ## 9. Art contract (so code never waits on art)
