@@ -3,73 +3,65 @@ extends Level
 ## Two alien waves -> the Hypnotic (unlocks Hypno Reverse) -> the Warden, against a 1:45 clock.
 ## World weapon: Flare Bow.
 
-const PLAZA := Vector2(1296, 720)   # the center: the mirror opens here
+const PLAZA := CityLayout.PLAZA     # the center: the mirror opens here
 const CLOCK := 105.0                # seconds before this timeline shatters
 const WAVES := [
-	{"drone": 4, "gunner": 0},
-	{"drone": 3, "gunner": 2},
+	{"drone": 4, "gunner": 1},
+	{"drone": 4, "gunner": 3},
 ]
 
 
 func configure() -> void:
 	world_size = Vector2(2592, 1440)
+	arena_override = Rect2(70, 190, 2452, 1120)
 	ground = "res://assets/ninja/ground/city.png"
 	music = "music_city"
 	boss_music = "music_city_boss"
 	ambient = "amb_rain"
 	surface = "stone"
-	ambient_color = Color(0.46, 0.5, 0.72)
+	ambient_color = Color(0.5, 0.54, 0.74)
 	particles = "rain"
-	spawn_point = Vector2(380, 720)
+	spawn_point = Vector2(300, 720)
 
 
 func build_world() -> void:
-	keepout(PLAZA, 300.0)
 	keepout(Vector2(spawn_point.x + 200, 720), 120.0)
-	place_weapon("flare_bow", Vector2(780, 940))
-	# The street: lamps on both sides of the road
-	for x in range(260, 2500, 330):
-		prop("lamp_post", Vector2(x, 620), {"light": Color(1.0, 0.75, 0.45), "energy": 1.4, "light_scale": 2.6})
-		prop("lamp_post", Vector2(x + 165, 860), {"light": Color(1.0, 0.75, 0.45), "energy": 1.4, "light_scale": 2.6})
-	# A town: intact houses on the north street, ruins where the aliens hit
-	prop("town_house_a", Vector2(420, 380))
-	prop("town_shop", Vector2(760, 380))
-	prop("town_house_b", Vector2(1880, 380))
-	prop("town_red", Vector2(2220, 380))
-	prop("ruin_house_big", Vector2(1100, 400))
-	prop("ruin_a", Vector2(1560, 360))
-	prop("town_house_c", Vector2(560, 1250))
-	prop("ruin_b", Vector2(900, 1250))
-	prop("ruin_c", Vector2(1500, 1260))
-	prop("statue_lion", PLAZA + Vector2(0, -260))
-	# Where they came through: crashed alien pods, still glowing
-	for pos in [Vector2(1720, 980), Vector2(820, 560), Vector2(2050, 620)]:
-		prop("alien_pod", pos, {"light": Color(0.4, 1.0, 0.5), "energy": 1.4, "light_scale": 2.2})
-		Juice.fx("smoke", pos + Vector2(0, -30), 2.0)
-	# Barricades the people built
-	for pos in [Vector2(640, 720), Vector2(1960, 720), Vector2(1300, 1040)]:
-		prop("barricade", pos)
-	# Refugee tents (they were running too)
-	prop("tent", Vector2(2180, 1060))
-	prop("firepit", Vector2(2050, 1080), {"collide": false, "light": Color(1.0, 0.55, 0.25), "energy": 1.6, "light_scale": 2.4})
-	border(["moss_tree", "pillar", "ruin_rubble", "moss_trees", "pillar_broken", "ruin_wall"], 170.0, 1)
-	scatter(["pillar_broken", "rock_grey_small", "ruin_rubble", "moss_tree", "pillar"], 14, Rect2(150, 150, 2290, 1140))
-	scatter(["bush_a", "bush_b", "fern", "rock_grey_small"], 26, Rect2(150, 150, 2290, 1140), {"collide": false}, 4.0)
-	for c in [Vector2(950, 560), Vector2(1700, 560), Vector2(560, 950), Vector2(1550, 1080), Vector2(2000, 860), Vector2(900, 1060)]:
-		crate_cluster(c, ["crate", "barrel", "crate_b", "sack"], 5, 0.25)
-	lore(Vector2(760, 560), "Evacuation notice: the creatures are not attacking. They are running.")
-	lore(Vector2(1820, 1040), "Day three. The lights in the sky look like campfires.")
-	add_chest(Vector2(1860, 960))
+	CityLayout.build(self, false)
+	# The refugee camp in the south-west: people were sheltering here when it began.
+	prop("tent", Vector2(410, 1112))
+	prop("tent_torn", Vector2(650, 1130), {"flip": true})
+	prop("firepit", Vector2(530, 1036), {"collide": false, "light": Color(1.0, 0.55, 0.25), "energy": 1.6, "light_scale": 2.6})
+	prop("stump", Vector2(462, 1000), {"collide": false})
+	prop("stump", Vector2(600, 996), {"collide": false})
+	for b in [["sack", Vector2(260, 1060)], ["sack", Vector2(285, 1095)], ["crate", Vector2(250, 1140)], ["barrel", Vector2(760, 1090)], ["crate_b", Vector2(790, 1130)]]:
+		breakable(b[0], b[1])
+	add_chest(Vector2(330, 1018))
+	lore(Vector2(560, 1186), "Day three. The lights in the sky look like campfires.")
+	# The market by the shop: crates stacked under the awning
+	for b in [["crate", Vector2(300, 420)], ["crate_b", Vector2(345, 440)], ["barrel", Vector2(395, 418)], ["crate", Vector2(250, 448)]]:
+		breakable(b[0], b[1])
+	lore(Vector2(440, 362), "Evacuation notice: the creatures aren't attacking. They're running from something.")
+	# Sandbags at the barricades
+	for pos in [Vector2(160, 620), Vector2(160, 820), Vector2(2430, 620), Vector2(2430, 820)]:
+		breakable("sack", pos)
+	# Red barrels the army left by the crash site: careful
+	for pos in [Vector2(1580, 940), Vector2(1760, 1220), Vector2(2050, 1210), Vector2(2240, 1080), Vector2(860, 690)]:
+		breakable("explosive", pos)
+	for c in [Vector2(1300, 1150), Vector2(2380, 420)]:
+		crate_cluster(c, ["crate", "barrel", "crate_b"], 3, 0.0)
+	place_weapon("flare_bow", Vector2(1110, 1110))
+	for pos in [Vector2(1900, 1060), Vector2(1660, 970), Vector2(2152, 990)]:
+		Juice.fx("smoke", pos, 2.0)
 
 
 func run() -> void:
 	next_scene = "world2"
-	title_card("THE FALLEN CITY", "The present day. Three days after the sky cracked.", "The Fallen City. The present day, three days after the sky cracked.")
-	await wait(2.6)
+	var nl := title_card("THE FALLEN CITY", "The present day. Three days after the sky cracked.", "The Fallen City. The present day. Here, the invaders are the ones running.", "REVERSAL: The invaders are the ones running.")
+	await wait(maxf(2.6, nl + 0.2))
 	start_clock(CLOCK)
-	summon_ally(true)
-	await wait(1.5)
-	say_line("They came through the cracks. Hold the line.")
+	var al := summon_ally(true)
+	await wait(maxf(1.5, al + 0.2))
+	say_line("They're pouring out of the cracks. Hold the line!")
 
 	for i in WAVES.size():
 		set_objective("Survive the alien waves (%d / %d)" % [i + 1, WAVES.size()])
@@ -101,7 +93,7 @@ func run() -> void:
 	Events.announce.emit("HYPNO REVERSE UNLOCKED")
 	Voice.say("HYPNO REVERSE UNLOCKED", "system")
 	await wait(1.2)
-	prompt("[Q] Hypno Reverse: their attacks become yours.")
+	prompt("[Q] Hypno Reverse: turn their attacks against them.")
 	set_objective("Try Hypno Reverse [Q] on the swarm")
 	for i in 4:
 		spawn("drone", edge_point(300.0))
@@ -116,7 +108,7 @@ func run() -> void:
 	var portal := add_portal(next_scene, PLAZA)
 	portal.activate()
 	set_objective("Step into the mirror")
-	say_line("The portal holds. Go.")
+	say_line("The mirror's open. Go!")
 
 
 ## Out of time before the Hypnotic fell: the shattering timeline still leaves its gift.

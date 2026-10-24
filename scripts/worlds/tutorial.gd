@@ -1,5 +1,5 @@
 extends Level
-## The Simulation: a holographic training village run by the Wise Elder.
+## The Simulation: inside the Reverser. A holographic copy of the Elder's village where he trains you.
 ## He offers to train you (move, sword, combo, breakables, shield, block, reflect) or let you skip.
 
 const P := "res://assets/ninja/"
@@ -35,23 +35,27 @@ func build_world() -> void:
 	keepout(spawn_point, 160.0)
 	var holo := {"tint": HOLO}
 	# The village the simulation is copying
-	prop("holo_house_a", Vector2(420, 330), holo)
-	prop("holo_house_b", Vector2(760, 300), holo)
-	prop("holo_house_c", Vector2(1180, 300), holo)
-	prop("holo_house_a", Vector2(1520, 340), holo)
+	prop("holo_house_a", Vector2(400, 330), holo)
+	prop("holo_house_b", Vector2(720, 330), holo)
+	prop("holo_house_c", Vector2(1200, 330), holo)
+	prop("holo_house_a", Vector2(1520, 330), holo)
 	prop("holo_torii", Vector2(960, 420), {"tint": HOLO, "collide": false})
 	prop("holo_statue", Vector2(960, 860), holo)
 	for x in [300, 380, 1540, 1620]:
 		prop("holo_fence", Vector2(x, 820), holo)
-	for pos in [Vector2(220, 560), Vector2(250, 900), Vector2(1700, 580), Vector2(1680, 900), Vector2(560, 950), Vector2(1380, 960), Vector2(1760, 300), Vector2(180, 300)]:
-		prop("holo_tree_big" if randi() % 2 == 0 else "holo_tree", pos, {"tint": HOLO, "sway": true})
+	var trees := [[Vector2(220, 480), true], [Vector2(240, 880), false], [Vector2(1700, 480), false], [Vector2(1690, 880), true],
+		[Vector2(560, 1010), false], [Vector2(1380, 1010), false], [Vector2(1760, 300), true], [Vector2(170, 300), true]]
+	for t in trees:
+		prop("holo_tree_big" if t[1] else "holo_tree", t[0], {"tint": HOLO, "sway": true})
 	for pos in [Vector2(1240, 760), Vector2(1310, 700), Vector2(1380, 780)]:
 		prop("holo_scarecrow", pos, {"tint": HOLO})
 	for pos in [Vector2(300, 200), Vector2(1600, 200), Vector2(200, 1000), Vector2(1720, 1020)]:
 		prop("crystal_tower_1", pos, {"light": Color(0.4, 0.95, 1.0), "energy": 0.35, "light_scale": 1.4, "tint": Color(0.7, 1.0, 1.0)})
 	# Floating data cubes
-	for i in 10:
-		var c := Prop.make("gem_block_blue", Vector2(randf_range(200, 1720), randf_range(180, 1000)), {"collide": false, "light": Color(0.4, 1.0, 1.0), "energy": 0.4, "light_scale": 0.6, "tint": Color(0.85, 1.0, 1.0, 0.85)})
+	# Floating data cubes mark the corners of the plaza and the paths out of it
+	for pos in [Vector2(600, 360), Vector2(1320, 360), Vector2(600, 800), Vector2(1320, 800), Vector2(300, 600), Vector2(1620, 600),
+			Vector2(860, 200), Vector2(1060, 200), Vector2(860, 1000), Vector2(1060, 1000)]:
+		var c := Prop.make("gem_block_blue", pos, {"collide": false, "light": Color(0.4, 1.0, 1.0), "energy": 0.4, "light_scale": 0.6, "tint": Color(0.85, 1.0, 1.0, 0.85)})
 		add_child(c)
 		_cubes.append(c)
 	# Training props
@@ -67,6 +71,7 @@ func build_world() -> void:
 	elder_sprite.scale = Vector2(3, 3)
 	elder_sprite.position = Vector2(0, -12)
 	elder_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	elder_sprite.modulate = Color(0.8, 1.05, 1.15, 0.92)   # he is a projection in here too
 	elder.add_child(elder_sprite)
 	var halo := Sheet.make_light(Color(1.0, 0.9, 0.6), 0.9, 1.6)
 	halo.position = Vector2(0, -20)
@@ -95,19 +100,19 @@ func _process(delta: float) -> void:
 
 
 func _elder(lines: Array) -> void:
-	await ui.say(lines, "Wise Elder", "elder", P + "chars/elder_face.png")
+	await ui.say(lines, "Elder", "elder", P + "chars/elder_face.png")
 
 
 func run() -> void:
 	player.dash_started.connect(func(_d): _dashed = true)
 	player.blocked.connect(_on_blocked)
-	ui.title_card("THE SIMULATION", "A training ground. Nothing here is real.")
-	await wait(3.6)
-	set_objective("Talk to the Wise Elder")
+	ui.title_card("THE SIMULATION", "Inside the Reverser. Nothing here is real.", "REVERSAL: What you block returns to its sender.")
+	await wait(4.2)
+	set_objective("Listen to the Elder")
 	await _elder([
-		"Welcome to the simulation, traveler. I am the Wise Elder.",
-		"Nothing here is real, and nothing here can truly hurt you.",
-		"I can train you. Or, if your hands still remember, I can send you straight on.",
+		"Welcome inside the Reverser. This village is only a memory, rebuilt in light.",
+		"Out there, every world's clock runs down. Close the crack before it hits zero, or that timeline shatters.",
+		"I can train you, or send you straight through.",
 	])
 	Voice.say("Will you train with me?", "elder")
 	var pick := 0
@@ -120,11 +125,11 @@ func run() -> void:
 		await _skip()
 	else:
 		await _train()
-	await _elder(["Remember one thing. A mirror returns what it is given. Strike your reflection, and you strike yourself."])
+	await _elder(["Remember this. A mirror returns what it is given. Strike your reflection, and you strike yourself."])
 	var portal := add_portal("world1", Vector2(1100, 640))
 	portal.activate()
 	set_objective("Step into the mirror")
-	await _elder(["Go. The first broken timeline is waiting."])
+	await _elder(["Go. The first crack is waiting."])
 
 
 func _skip() -> void:
@@ -174,16 +179,10 @@ func _train() -> void:
 	while _hits < 3:
 		await get_tree().physics_frame
 	await _good()
-	prompt("Strike three times in a row to finish with a spin.")
-	var t0 := GameManager.run_time
-	while _spins < 1 and GameManager.run_time - t0 < 14.0:
-		await get_tree().physics_frame
-	await _good()
-
 	set_objective("Break the crates")
 	prompt("Break the crates. Red barrels explode.")
-	t0 = GameManager.run_time
-	while get_tree().get_nodes_in_group("breakable").size() > 5 and GameManager.run_time - t0 < 16.0:
+	var t0 := GameManager.run_time
+	while get_tree().get_nodes_in_group("breakable").size() > 5 and GameManager.run_time - t0 < 10.0:
 		objective = get_tree().get_first_node_in_group("breakable")
 		await wait(0.3)
 	objective = null

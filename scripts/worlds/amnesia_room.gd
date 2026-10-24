@@ -1,5 +1,6 @@
 extends Level
-## Wake up, talk to the Stranger, put on the helmet.
+## Wake up. The Elder tells you what the helmet is (the Reverser: it turns time backwards)
+## and why you can't remember. Put it on.
 
 const P := "res://assets/ninja/"
 
@@ -50,7 +51,7 @@ func build_world() -> void:
 	add_child(moon)
 
 	# The VR helmet rests on the table (drawn above it; the table blocks you).
-	helmet = add_interactable(P + "props/vr_helmet.png", Vector2(648, 300), "[E] Put on the helmet", 110.0, 3.0)
+	helmet = add_interactable(P + "props/vr_helmet.png", Vector2(648, 300), "[E] Put on the Reverser", 110.0, 3.0)
 	helmet.z_index = 2
 	helmet.enabled = false
 	helmet.light_color = Color(0.4, 0.95, 1.0)
@@ -59,7 +60,7 @@ func build_world() -> void:
 
 	npc = add_interactable("", Vector2(980, 400), "[E] Talk", 100.0)
 	npc_sprite = AnimatedSprite2D.new()
-	npc_sprite.sprite_frames = Sheet.character(P + "chars/npc")
+	npc_sprite.sprite_frames = Sheet.character(P + "chars/elder")
 	npc_sprite.play("idle_left")
 	npc_sprite.scale = Vector2(3, 3)
 	npc_sprite.position = Vector2(0, -12)
@@ -82,7 +83,7 @@ func build_world() -> void:
 	npc.used.connect(_on_talk)
 
 	var door := add_interactable(P + "props/door.png", Vector2(648, 150), "[E] Door", 90.0, 3.0)
-	door.used.connect(func(): say_line("The door doesn't open. Not from this side."))
+	door.used.connect(func(): say_line("The door won't open. Not from this side."))
 
 
 var _helmet_ring: Line2D
@@ -128,9 +129,9 @@ func run() -> void:
 	GameManager.input_locked = true
 	await wait(1.2)
 	GameManager.input_locked = false
-	await ui.say(["...", "Where am I?"], "You", "you", P + "chars/player_face.png")
+	await ui.say(["Ugh... my head.", "Where am I?"], "You", "you", P + "chars/player_face.png")
 	Events.tutorial_prompt.emit("WASD to move. [E] to talk.")
-	set_objective("Talk to the stranger")
+	set_objective("Talk to the Elder")
 	objective = npc
 
 
@@ -153,22 +154,22 @@ func _process(delta: float) -> void:
 func _on_talk() -> void:
 	prompt("")
 	if _talked:
-		await ui.say(["The helmet. Please."], "Stranger", "stranger", P + "chars/npc_face.png")
+		await ui.say(["Put on the Reverser. Please. Time is running out... backwards."], "Elder", "elder", P + "chars/elder_face.png")
 		return
 	_talked = true
 	await ui.say([
-		"You're awake. Good. Don't try to remember. Not yet.",
-		"Something broke time. Now it runs backwards, like a reflection in a mirror.",
-		"In a reversed world the hunter becomes the hunted, and every blow comes back to the one who struck it.",
-		"This helmet lets you walk the broken timelines, back to the moment it all cracked.",
-		"Find the crack. Close it. Whatever it costs.",
-		"Put this on.",
-	], "Stranger", "stranger", P + "chars/npc_face.png")
+		"Easy. You've been asleep a long time.",
+		"That helmet is the Reverser. You built it. It turns time backwards.",
+		"You wore it to undo the end of the world. Instead, time cracked like a mirror, and now every era runs in reverse.",
+		"It eats memories. That's why you can't remember. And when you fall, it rewinds you... but less of you comes back.",
+	], "Elder", "elder", P + "chars/elder_face.png")
+	await ui.say(["Wait... I did this?"], "You", "you", P + "chars/player_face.png")
+	await ui.say(["You did. So only you can close it. Put it on. Follow the cracks back."], "Elder", "elder", P + "chars/elder_face.png")
 	helmet.enabled = true
 	helmet.glow = true
 	objective = helmet
-	set_objective("Put on the helmet")
-	Events.tutorial_prompt.emit("[E] Put on the helmet")
+	set_objective("Put on the Reverser")
+	Events.tutorial_prompt.emit("[E] Put on the Reverser")
 
 
 func _on_helmet() -> void:
