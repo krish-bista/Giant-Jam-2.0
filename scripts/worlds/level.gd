@@ -32,6 +32,11 @@ var objective: Node2D = null
 var weapon_pickup: Node2D = null
 var ally: ReflectionAlly = null
 var revives_here := true
+## The world clock (TimeRift) and where this world sends you: through the mirror when you
+## beat it in time, or by shattering when the clock runs out.
+var clock: TimeRift = null
+var next_scene := ""
+var _time_up := false
 var _keepout: Array = []     # [pos, radius] areas where scatter won't place props
 var _rng := RandomNumberGenerator.new()
 
@@ -284,8 +289,72 @@ func _physics_process(_delta: float) -> void:
 
 
 # ---------------- helpers for level scripts ----------------
+## Waits (paused with the game). Uses a Timer owned by the level, so a flow that is still
+## waiting when the world shatters simply ends with it.
 func wait(seconds: float) -> void:
-	await get_tree().create_timer(seconds, false).timeout
+	if seconds <= 0.0:
+		await get_tree().process_frame
+		return
+	var t := Timer.new()
+	t.one_shot = true
+	t.wait_time = seconds
+	add_child(t)
+	t.start()
+	await t.timeout
+	t.queue_free()
+
+
+# ---------------- the world clock ----------------
+## Starts this world's clock. Time runs backwards; the edges close in as a mirror.
+func start_clock(seconds: float) -> TimeRift:
+	if OS.get_environment("ECHO_CLOCK") != "":
+		seconds = float(OS.get_environment("ECHO_CLOCK"))
+	clock = TimeRift.new()
+	clock.level = self
+	clock.duration = seconds
+	add_child(clock)
+	setup_clock_bounds(clock)
+	clock.expired.connect(_on_time_up)
+	ui.make_room_for_clock()
+	clock.start()
+	return clock
+
+
+## Override for a different boundary (the final platform is a circle).
+func setup_clock_bounds(c: TimeRift) -> void:
+	c.setup_rect(ARENA)
+
+
+## The world was beaten in time: stop the clock, the mirror pulls back, the stragglers fade.
+func world_cleared() -> void:
+	if _time_up:
+		return
+	if is_instance_valid(clock):
+		clock.clear()
+	for e in alive.duplicate():
+		if is_instance_valid(e) and not e._dead and not e.is_in_group("flipped"):
+			e.drops = false
+			e.die()
+
+
+## Override: what losing the race against time costs in this world.
+func on_time_up() -> void:
+	pass
+
+
+func time_is_up() -> bool:
+	return _time_up
+
+
+func _on_time_up() -> void:
+	if _time_up:
+		return
+	_time_up = true
+	on_time_up()
+	set_objective("")
+	Events.tutorial_prompt.emit("")
+	await clock.collapse()
+	GameManager.go_to_scene(next_scene, "shatter")
 
 
 ## Shows a hint at the bottom of the screen and speaks it if a voice line exists.
@@ -433,7 +502,7 @@ func wait_clear() -> void:
 		alive = alive.filter(func(e): return is_instance_valid(e) and not e._dead)
 		if alive.is_empty():
 			return
-		await get_tree().create_timer(0.25, false).timeout
+		await wait(0.25)
 
 
 func add_portal(target: String, pos: Vector2, is_final := false) -> Portal:
@@ -454,6 +523,7 @@ func add_interactable(tex_path: String, pos: Vector2, text: String, reach := 70.
 	it.reach = reach
 	it.position = pos
 	it.sprite_scale = scale
+	it.add_to_group("interactable")
 	add_child(it)
 	return it
 

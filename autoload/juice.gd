@@ -107,6 +107,9 @@ func reset_time() -> void:
 	_base_time_scale = 1.0
 	Engine.time_scale = 1.0
 	set_screen(0.35, 0.0, 0.0, Color.WHITE)
+	if _screen_mat:
+		_screen_mat.set_shader_parameter("edge_on", 0.0)
+		_screen_mat.set_shader_parameter("dom_on", 0.0)
 
 
 # ---------------- screen ----------------
@@ -137,6 +140,47 @@ func domain(world_pos: Vector2, radius_px: float, on: float, crack := 0.0) -> vo
 	_screen_mat.set_shader_parameter("dom_radius", radius_px * zoom / size.y)
 	_screen_mat.set_shader_parameter("dom_on", on)
 	_screen_mat.set_shader_parameter("dom_crack", crack)
+
+
+## Time rift edges (driven by TimeRift): everything outside the world rectangle is a see-through,
+## reverted mirror reflecting the world back in. warn 0..1 turns the seam red.
+func mirror_edge(rect: Rect2, on: float, warn := 0.0) -> void:
+	_edge_view()
+	_screen_mat.set_shader_parameter("edge_mode", 0)
+	_screen_mat.set_shader_parameter("edge_rect", Vector4(rect.position.x, rect.position.y, rect.end.x, rect.end.y))
+	_screen_mat.set_shader_parameter("edge_outer", 100000.0)
+	_screen_mat.set_shader_parameter("edge_on", on)
+	_screen_mat.set_shader_parameter("edge_warn", warn)
+
+
+## Same, for a circular arena (the final mirror platform). Beyond `outer` the effect stops.
+func mirror_edge_circle(center: Vector2, radius: float, outer: float, on: float, warn := 0.0) -> void:
+	_edge_view()
+	_screen_mat.set_shader_parameter("edge_mode", 1)
+	_screen_mat.set_shader_parameter("edge_circle", Vector3(center.x, center.y, radius))
+	_screen_mat.set_shader_parameter("edge_outer", outer)
+	_screen_mat.set_shader_parameter("edge_on", on)
+	_screen_mat.set_shader_parameter("edge_warn", warn)
+
+
+func mirror_edge_off() -> void:
+	_screen_mat.set_shader_parameter("edge_on", 0.0)
+
+
+func _edge_view() -> void:
+	var vp := get_viewport()
+	var inv := vp.get_canvas_transform().affine_inverse()
+	var size := vp.get_visible_rect().size
+	_screen_mat.set_shader_parameter("world_origin", inv * Vector2.ZERO)
+	_screen_mat.set_shader_parameter("world_span", inv.basis_xform(size))
+
+
+## Fade the screen up to white (the light breaking through before a shatter).
+func whiteout(alpha := 0.6, duration := 0.6) -> void:
+	_flash.color = Color(1, 1, 1, 0)
+	var t := create_tween()
+	t.set_ignore_time_scale(true)
+	t.tween_property(_flash, "color:a", alpha, duration).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
 
 
 ## Negative-image flash (the world reversed for an instant).

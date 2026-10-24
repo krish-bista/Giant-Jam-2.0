@@ -21,6 +21,30 @@ var _artifacts_logged := 0
 var _used_once := {}
 var _special_t := 0.0
 var _event_t := 0.0
+var _switch_t := 0.0
+var _switch_shots := 0
+var _clock_shot := false
+
+
+## Screenshots during scene transitions (shatter / mirror) and of the clock running low.
+func _process(delta: float) -> void:
+	var shots := OS.get_environment("ECHO_BOT_SHOTS")
+	if shots == "":
+		return
+	var real := delta / maxf(Engine.time_scale, 0.01)
+	var lvl := get_tree().current_scene
+	var collapsing: bool = lvl is Level and is_instance_valid(lvl.clock) and lvl.clock.collapsed
+	if GameManager._switching or collapsing:
+		_switch_t -= real
+		if _switch_t <= 0.0 and _switch_shots < 30:
+			_switch_t = 0.12
+			_switch_shots += 1
+			get_viewport().get_texture().get_image().save_png("%s/switch_%s_%02d.png" % [shots, GameManager.current_scene, _switch_shots])
+	else:
+		_switch_shots = 0
+	if lvl is Level and is_instance_valid(lvl.clock) and not _clock_shot and lvl.clock.progress() > 0.8 and not lvl.clock.collapsed:
+		_clock_shot = true
+		get_viewport().get_texture().get_image().save_png("%s/clock_low_%s.png" % [shots, GameManager.current_scene])
 var _shot_t := 3.0
 var _shot_n := 0
 
@@ -152,7 +176,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# Final: take the ending as soon as it's offered.
-	if scene == "final" and root.get("_can_end") and not root.get("_ending"):
+	if scene == "final" and root.get("_can_end") and not root.get("_ending") and OS.get_environment("ECHO_BOT_NO_END") != "1":
 		if _tap_t <= 0.0:
 			_tap_t = 0.3
 			_tap("interact")

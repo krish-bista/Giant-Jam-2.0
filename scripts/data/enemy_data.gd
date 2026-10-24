@@ -30,19 +30,19 @@ const TYPES := {
 }
 
 const BOSSES := {
-	"hypnotic": {"name": "THE HYPNOTIC", "hp": 150.0, "dmg": 10.0, "speed": 85.0, "radius": 50.0, "cd": 2.4,
+	"hypnotic": {"name": "THE HYPNOTIC", "hp": 110.0, "dmg": 10.0, "speed": 85.0, "radius": 50.0, "cd": 2.4,
 		"patterns": ["hypno_pulse", "volley", "volley"], "voice": "hypnotic",
 		"intro": "Look at me. Closer. ...Which way is up now?", "death": "You'll see it too. Soon.",
 		"fixed_drop": "hypno_lens", "summon": [], "face": N + "bosses/squid_face.png"},
-	"warden": {"name": "THE WARDEN", "hp": 400.0, "dmg": 10.0, "speed": 95.0, "radius": 52.0, "cd": 2.0,
+	"warden": {"name": "THE WARDEN", "hp": 240.0, "dmg": 10.0, "speed": 95.0, "radius": 52.0, "cd": 2.0,
 		"patterns": ["line", "volley", "charge"], "voice": "warden",
 		"intro": "Hold the portal. Whatever it costs.", "death": "...It's already too late for us.",
 		"summon": ["drone", "drone", "drone"], "face": N + "bosses/cyclops_face.png"},
-	"alpha_rex": {"name": "THE ALPHA", "hp": 500.0, "dmg": 12.0, "speed": 125.0, "radius": 60.0, "cd": 1.8,
+	"alpha_rex": {"name": "THE ALPHA", "hp": 300.0, "dmg": 12.0, "speed": 125.0, "radius": 60.0, "cd": 1.8,
 		"patterns": ["charge", "jump_slam", "tail"], "swap_flee": true, "voice": "",
 		"intro": "The jungle remembers its first intruder.", "death": "",
 		"summon": ["raptor_hunter", "raptor_hunter"], "face": N + "bosses/beast_face.png"},
-	"sentinel": {"name": "CORE SENTINEL", "hp": 550.0, "dmg": 12.0, "speed": 210.0, "radius": 46.0, "cd": 1.9,
+	"sentinel": {"name": "CORE SENTINEL", "hp": 340.0, "dmg": 12.0, "speed": 210.0, "radius": 46.0, "cd": 1.9,
 		"patterns": ["ring", "swoop", "circle_player", "volley"], "voice": "sentinel",
 		"intro": "You again. You always come back.", "death": "We only wanted somewhere to run.",
 		"summon": ["husk", "husk"], "face": N + "bosses/wyrm_faceset.png"},

@@ -1,12 +1,13 @@
 extends Level
 ## THE FALLEN CITY - the present day, three days after the sky cracked.
-## Alien waves -> the Hypnotic (unlocks Hypno Reverse) -> the Warden. World weapon: Flare Bow.
+## Two alien waves -> the Hypnotic (unlocks Hypno Reverse) -> the Warden, against a 1:45 clock.
+## World weapon: Flare Bow.
 
-const PLAZA := Vector2(1300, 720)
+const PLAZA := Vector2(1296, 720)   # the center: the mirror opens here
+const CLOCK := 105.0                # seconds before this timeline shatters
 const WAVES := [
 	{"drone": 4, "gunner": 0},
-	{"drone": 5, "gunner": 2},
-	{"drone": 4, "gunner": 3},
+	{"drone": 3, "gunner": 2},
 ]
 
 
@@ -25,7 +26,7 @@ func configure() -> void:
 func build_world() -> void:
 	keepout(PLAZA, 300.0)
 	keepout(Vector2(spawn_point.x + 200, 720), 120.0)
-	place_weapon("flare_bow", Vector2(2250, 1150))
+	place_weapon("flare_bow", Vector2(780, 940))
 	# The street: lamps on both sides of the road
 	for x in range(260, 2500, 330):
 		prop("lamp_post", Vector2(x, 620), {"light": Color(1.0, 0.75, 0.45), "energy": 1.4, "light_scale": 2.6})
@@ -56,23 +57,24 @@ func build_world() -> void:
 	scatter(["bush_a", "bush_b", "fern", "rock_grey_small"], 26, Rect2(150, 150, 2290, 1140), {"collide": false}, 4.0)
 	for c in [Vector2(950, 560), Vector2(1700, 560), Vector2(560, 950), Vector2(1550, 1080), Vector2(2000, 860), Vector2(900, 1060)]:
 		crate_cluster(c, ["crate", "barrel", "crate_b", "sack"], 5, 0.25)
-	lore(Vector2(560, 560), "Evacuation notice: the creatures are not attacking. They are running.")
-	lore(Vector2(2120, 1180), "Day three. The lights in the sky look like campfires.")
-	add_chest(Vector2(2420, 250))
+	lore(Vector2(760, 560), "Evacuation notice: the creatures are not attacking. They are running.")
+	lore(Vector2(1820, 1040), "Day three. The lights in the sky look like campfires.")
+	add_chest(Vector2(1860, 960))
 
 
 func run() -> void:
+	next_scene = "world2"
 	title_card("THE FALLEN CITY", "The present day. Three days after the sky cracked.", "The Fallen City. The present day, three days after the sky cracked.")
-	await wait(4.2)
+	await wait(2.6)
+	start_clock(CLOCK)
 	summon_ally(true)
-	await wait(4.5)
+	await wait(1.5)
 	say_line("They came through the cracks. Hold the line.")
-	await wait(2.0)
 
 	for i in WAVES.size():
 		set_objective("Survive the alien waves (%d / %d)" % [i + 1, WAVES.size()])
 		Events.announce.emit("WAVE %d" % (i + 1))
-		await wait(1.0)
+		await wait(0.6)
 		var wave: Dictionary = WAVES[i]
 		var list: Array[String] = []
 		for k in wave.drone:
@@ -82,13 +84,13 @@ func run() -> void:
 		list.shuffle()
 		for id in list:
 			spawn(id, edge_point())
-			await wait(0.45)
+			await wait(0.3)
 		await wait_clear()
-		await wait(2.0)
+		await wait(0.8)
 
 	set_objective("Go to the plaza")
 	objective = _marker(PLAZA)
-	while is_instance_valid(player) and player.global_position.distance_to(PLAZA) > 380.0:
+	while is_instance_valid(player) and player.global_position.distance_to(PLAZA) > 420.0:
 		await wait(0.3)
 	objective = null
 	set_objective("Defeat the Hypnotic")
@@ -96,28 +98,32 @@ func run() -> void:
 	await hypno.died
 	GameManager.hypno_unlocked = true
 	Events.ability_unlocked.emit("hypno")
-	await wait(1.2)
 	Events.announce.emit("HYPNO REVERSE UNLOCKED")
 	Voice.say("HYPNO REVERSE UNLOCKED", "system")
-	await wait(2.0)
+	await wait(1.2)
 	prompt("[Q] Hypno Reverse: their attacks become yours.")
 	set_objective("Try Hypno Reverse [Q] on the swarm")
-	await wait(1.5)
-
-	for i in 5:
-		spawn("drone", edge_point(320.0))
-	spawn("gunner", edge_point(360.0))
-	await wait(6.0)
+	for i in 4:
+		spawn("drone", edge_point(300.0))
+	spawn("gunner", edge_point(340.0))
+	await wait(3.5)
 	Events.tutorial_prompt.emit("")
 	set_objective("Defeat the Warden")
 	var warden := spawn_boss("warden", PLAZA + Vector2(0, -160))
 	await warden.died
-	await wait_clear()
-	await wait(2.0)
-	var portal := add_portal("world2", PLAZA)
+	world_cleared()
+	await wait(1.2)
+	var portal := add_portal(next_scene, PLAZA)
 	portal.activate()
 	set_objective("Step into the mirror")
 	say_line("The portal holds. Go.")
+
+
+## Out of time before the Hypnotic fell: the shattering timeline still leaves its gift.
+func on_time_up() -> void:
+	if not GameManager.hypno_unlocked:
+		GameManager.hypno_unlocked = true
+		GameManager.flags["hypno_late"] = true
 
 
 func _marker(pos: Vector2) -> Node2D:

@@ -483,6 +483,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		_pause.visible = get_tree().paused
 
 
+## The world clock sits at the top center: move the boss bar, hunt meter and subtitles below it.
+func make_room_for_clock() -> void:
+	if is_instance_valid(hud):
+		var boss: Control = hud.get_node_or_null("Boss")
+		if boss:
+			boss.position.y = 108.0
+		var hunt: Control = hud.get_node_or_null("Hunt")
+		if hunt:
+			hunt.position.y = 168.0
+	_subtitle.position.y = 216.0
+
+
 func letterbox(on: bool) -> void:
 	for i in 2:
 		var bar := _bars[i]

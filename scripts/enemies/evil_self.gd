@@ -126,7 +126,7 @@ func _check_prompt(p: Node2D) -> void:
 	if prompt_shown:
 		return
 	var low: bool = p.health < p.max_health * 0.3
-	if fight_time >= 20.0 or hits_taken >= 5 or low:
+	if fight_time >= 16.0 or hits_taken >= 6 or low:
 		prompt_shown = true
 		ready_for_ending.emit()
 
