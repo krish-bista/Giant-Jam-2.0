@@ -251,7 +251,7 @@ var hurt_log := {}
 func _on_hurt(amount: float, source: Variant) -> void:
 	var key := "?"
 	if is_instance_valid(source):
-		key = source.boss_name if "boss_name" in source and source.boss_name != "" else (source.type_id if "type_id" in source else source.get_class())
+		key = source.boss_name if "boss_name" in source and source.boss_name != "" else (source.type_id if "type_id" in source and source.type_id != "" else source.get_class())
 	var k := "%s/%s" % [GameManager.current_scene, key]
 	hurt_log[k] = hurt_log.get(k, 0.0) + amount
 	if Engine.get_process_frames() % 1 == 0 and GameManager.current_scene == OS.get_environment("ECHO_BOT_TRACE"):

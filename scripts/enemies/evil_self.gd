@@ -17,6 +17,7 @@ var _blocking := false
 var _block_t := 1.5
 var _attack_t := 1.2
 var _aura: CPUParticles2D
+var _base_damage := 10.0
 
 
 func setup_evil() -> EvilSelf:
@@ -26,6 +27,7 @@ func setup_evil() -> EvilSelf:
 	max_health = s.max_health
 	health = max_health
 	damage = s.damage
+	_base_damage = damage
 	speed = s.speed * 0.8
 	drops = false
 	return self
@@ -131,7 +133,8 @@ func take_damage(amount: float, source: Node = null) -> void:
 		rig.deflect_fx(global_position)
 		Juice.chroma(0.01)
 		set_meta("reflecting", true)
-		source.take_damage(amount * GameManager.stats.reflect_power, self)
+		# Your own boosted hits come back, but capped so a reflected crit can't one-shot you.
+		source.take_damage(clampf(amount * 0.5, 4.0, 14.0), self)
 		set_meta("reflecting", false)
 		Events.subtitle.emit("Mirror.", Color(1, 0.5, 0.5))
 		Voice.say("Mirror.", "evil")
@@ -145,8 +148,8 @@ func take_damage(amount: float, source: Node = null) -> void:
 	_knock = (global_position - (source as Node2D).global_position).normalized() * 120.0 if source is Node2D else Vector2.ZERO
 	health = maxf(1.0, health - amount)
 	Events.boss_health_changed.emit("YOU", health, max_health)
-	damage *= 1.15
-	speed *= 1.05
+	damage = minf(damage * 1.15, _base_damage * 2.5)
+	speed = minf(speed * 1.05, GameManager.stats.speed * 1.2)
 	_aura.amount = mini(80, _aura.amount + 8)
 	var taunt: String = TAUNTS[(hits_taken - 1) % TAUNTS.size()]
 	Events.subtitle.emit(taunt, Color(1, 0.5, 0.5))
