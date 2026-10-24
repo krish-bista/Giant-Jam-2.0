@@ -109,9 +109,13 @@ func _physics_process(delta: float) -> void:
 		if to_p.length() > 52.0:
 			move = to_p.normalized() * speed
 		if _attack_t <= 0.0 and to_p.length() < 95.0 and not _blocking:
-			_attack_t = maxf(0.6, 1.3 - hits_taken * 0.05)
+			_attack_t = maxf(0.9, 1.5 - hits_taken * 0.05)
 			_winding = true
-			_wind_left = 0.35
+			_wind_left = 0.65
+			# Telegraph: "!" + blade glint + a parry ring that closes on the hit.
+			ParryCue.show_on(p, _wind_left)
+			Juice.text_pop(global_position + Vector2(0, -30), "!", Color(1, 0.4, 0.4), 32, 20.0, 0.6)
+			Juice.fx("spark", rig.sword_pivot.global_position + Vector2(0, -30), 1.8, 0.0, Color(2.4, 0.8, 0.8))
 	velocity = move + _knock
 	_knock = _knock.move_toward(Vector2.ZERO, 900.0 * delta)
 	move_and_slide()

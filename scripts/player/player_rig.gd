@@ -46,7 +46,7 @@ func setup(owner_node: Node2D, body_sprite: AnimatedSprite2D, skin_name := "play
 	skin = skin_name
 	var evil := skin == "evil"
 	var ally := skin == "ally"
-	body.sprite_frames = Sheet.character(N + ("chars/evil" if evil else ("chars/holo" if ally else "chars/player")))
+	body.sprite_frames = Sheet.character(N + ("chars/evil" if evil else "chars/player"))
 	body.scale = Vector2(3, 3)
 	body.position = Vector2(0, -10)
 	body.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -93,8 +93,8 @@ func setup(owner_node: Node2D, body_sprite: AnimatedSprite2D, skin_name := "play
 		slash_color = Color(2.4, 0.5, 0.6)
 		trail_color = Color(1, 0.3, 0.35)
 	if ally:
-		slash_color = Color(1.2, 2.2, 2.6)
-		trail_color = Color(0.5, 1.0, 1.0)
+		slash_color = Color(0.6, 0.95, 1.0, 0.8)
+		trail_color = Color(0.4, 0.8, 0.85)
 	grad.colors = PackedColorArray([Color(trail_color, 0.0), Color(trail_color.r * 1.6, trail_color.g * 1.6, trail_color.b * 1.6, 0.9)])
 	trail.gradient = grad
 	trail.z_index = 25
@@ -105,12 +105,17 @@ func setup(owner_node: Node2D, body_sprite: AnimatedSprite2D, skin_name := "play
 
 	light = Sheet.make_light(Color(1, 0.35, 0.35) if evil else (Color(0.4, 1.0, 1.0) if ally else Color(0.75, 0.9, 1.0)), 0.7 if ally else 0.55, 2.0 if ally else 2.4)
 	if ally:
-		# A translucent warrior made of mirror light.
-		base_tint = Color(1.3, 1.8, 2.0, 0.55)
-		body.modulate = base_tint
-		sword.modulate = Color(1.4, 2.0, 2.2, 0.75)
-		shield.modulate = Color(1.4, 2.0, 2.2, 0.6)
-		shadow.modulate = Color(0, 0, 0, 0.2)
+		# You, as a hologram: same sprite, cyan light, scanlines, see-through.
+		var holo := ShaderMaterial.new()
+		holo.shader = preload("res://assets/shaders/hologram.gdshader")
+		body.material = holo
+		var holo_gear := ShaderMaterial.new()
+		holo_gear.shader = preload("res://assets/shaders/hologram.gdshader")
+		holo_gear.set_shader_parameter("alpha", 0.7)
+		sword.material = holo_gear
+		shield.material = holo_gear
+		base_tint = Color.WHITE
+		shadow.modulate = Color(0.2, 0.6, 0.7, 0.3)
 	light.position = Vector2(0, -6)
 	add_child(light)
 	_place_sword_sheathed()

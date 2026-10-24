@@ -407,29 +407,16 @@ func _try_hypno() -> void:
 	_show_hypno_wave()
 
 
+## Domain expansion: the world nearly stops, a mirror opens on the ground, everything inside
+## shows its inverted soul for a split second, then the mirror shatters.
 func _show_hypno_wave() -> void:
-	Juice.invert(0.22)
-	Juice.chroma(0.025)
-	Juice.slow_pulse(0.35, 0.18)
-	Juice.shockwave(global_position, 0.07, 0.6)
-	Juice.zoom_punch(0.08)
-	for i in 2:
-		var ring := Line2D.new()
-		ring.width = 8.0 - i * 3.0
-		ring.default_color = Color(2.2, 0.7, 2.2, 0.9) if i == 0 else Color(0.7, 2.2, 2.4, 0.9)
-		var pts := PackedVector2Array()
-		for k in 49:
-			pts.append(Vector2.RIGHT.rotated(k * TAU / 48.0) * 20.0)
-		ring.points = pts
-		ring.z_index = 20
-		add_child(ring)
-		var t := ring.create_tween()
-		t.tween_interval(i * 0.08)
-		t.tween_property(ring, "scale", Vector2.ONE * (HYPNO_RANGE / 20.0), 0.4).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-		t.parallel().tween_property(ring, "modulate:a", 0.0, 0.45)
-		t.tween_callback(ring.queue_free)
-	Juice.fx("aura", global_position, 7.0, 0.0, Color(2.0, 0.6, 1.8))
-	Juice.light_flash(global_position, Color(1, 0.4, 1.0), 2.0, 4.0, 0.45)
+	Juice.slow_pulse(0.06, 0.5)
+	Juice.chroma(0.02)
+	Juice.shockwave(global_position, 0.06, 0.6)
+	Juice.zoom_punch(0.1)
+	Juice.light_flash(global_position, Color(0.5, 1.0, 1.0), 1.6, 3.6, 0.5)
+	MirrorDomain.open_at(get_tree().current_scene, global_position, HYPNO_RANGE)
+	Juice.text_pop(global_position + Vector2(0, -60), "MIRROR DOMAIN", Color(0.7, 1.0, 1.0), 24, 20.0, 0.9)
 
 
 ## [F] The current world's special weapon.

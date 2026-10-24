@@ -127,6 +127,18 @@ func shockwave(world_pos: Vector2, strength := 0.04, duration := 0.45) -> void:
 	_wave_t = 0.0
 
 
+## Mirror Domain overlay (driven by MirrorDomain): world position, radius in pixels, crack 0..1.
+func domain(world_pos: Vector2, radius_px: float, on: float, crack := 0.0) -> void:
+	var vp := get_viewport()
+	var size := vp.get_visible_rect().size
+	var cam := vp.get_camera_2d()
+	var zoom: float = cam.zoom.x if cam else 1.0
+	_screen_mat.set_shader_parameter("dom_center", (vp.get_canvas_transform() * world_pos) / size)
+	_screen_mat.set_shader_parameter("dom_radius", radius_px * zoom / size.y)
+	_screen_mat.set_shader_parameter("dom_on", on)
+	_screen_mat.set_shader_parameter("dom_crack", crack)
+
+
 ## Negative-image flash (the world reversed for an instant).
 func invert(duration := 0.2) -> void:
 	_screen_mat.set_shader_parameter("invert", 1.0)

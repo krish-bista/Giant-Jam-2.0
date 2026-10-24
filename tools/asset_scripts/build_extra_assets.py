@@ -172,15 +172,38 @@ def mirror(path, frame_dark, frame_mid, frame_light, glass_a, glass_b, crack_col
 mirror(nin("props/mirror_portal.png"), (60, 44, 20, 255), (170, 130, 60, 255), (240, 205, 120, 255), (110, 175, 220), (235, 252, 255), (200, 235, 255, 255))
 mirror(nin("props/mirror_portal_final.png"), (20, 20, 26, 255), (110, 110, 125, 255), (210, 210, 225, 255), (60, 10, 20), (190, 60, 80), (255, 200, 200, 255))
 
-# ---------------- VR helmet (Ninja-style) ----------------
-hel = Image.new("RGBA", (16, 13))
+# ---------------- VR helmet (high tech) ----------------
+hel = Image.new("RGBA", (26, 18))
 d = ImageDraw.Draw(hel)
-d.ellipse((1, 0, 14, 12), fill=(58, 64, 82, 255))
-d.ellipse((2, 1, 13, 10), fill=(92, 100, 124, 255))
-d.rectangle((2, 5, 13, 8), fill=(20, 30, 48, 255))
-d.rectangle((3, 6, 12, 7), fill=(90, 230, 255, 255))
-d.point((4, 2), fill=(200, 210, 230, 255)); d.point((5, 2), fill=(200, 210, 230, 255))
-d.rectangle((0, 6, 1, 8), fill=(40, 44, 58, 255)); d.rectangle((14, 6, 15, 8), fill=(40, 44, 58, 255))
+# head strap arching over the top
+d.arc((3, 0, 22, 14), 190, 350, fill=(96, 102, 118, 255), width=2)
+d.arc((4, 1, 21, 13), 200, 340, fill=(140, 146, 162, 255), width=1)
+# shell
+d.rounded_rectangle((2, 6, 23, 16), 3, fill=(34, 38, 50, 255))
+d.rounded_rectangle((3, 6, 22, 9), 2, fill=(58, 64, 82, 255))
+d.line([(5, 7), (20, 7)], fill=(96, 104, 128, 255))
+for x in (7, 18):
+    d.line([(x, 6), (x, 8)], fill=(24, 26, 36, 255))
+# visor glass: cyan -> blue gradient
+for x in range(4, 22):
+    t = (x - 4) / 17
+    col = (int(100 - 60 * t), int(240 - 130 * t), int(255 - 35 * t), 255)
+    d.line([(x, 10), (x, 13)], fill=col)
+d.line([(4, 10), (21, 10)], fill=(190, 255, 255, 255))
+d.line([(4, 13), (21, 13)], fill=(20, 40, 90, 255))
+d.line([(6, 11), (9, 11)], fill=(255, 255, 255, 255))
+# sensor lenses
+for x in (8, 17):
+    d.point((x, 12), fill=(10, 20, 40, 255))
+    d.point((x + 1, 12), fill=(10, 20, 40, 255))
+d.point((18, 11), fill=(230, 255, 255, 255))
+# side pods with LEDs
+d.rounded_rectangle((0, 9, 2, 14), 1, fill=(44, 48, 62, 255))
+d.rounded_rectangle((23, 9, 25, 14), 1, fill=(44, 48, 62, 255))
+d.point((1, 11), fill=(90, 255, 150, 255))
+d.point((24, 11), fill=(255, 90, 100, 255))
+# glowing logo
+d.point((12, 7), fill=(120, 255, 255, 255)); d.point((13, 7), fill=(120, 255, 255, 255))
 save(outlined(hel), nin("props/vr_helmet.png"))
 
 # ---------------- grave ----------------

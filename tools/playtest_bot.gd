@@ -20,6 +20,7 @@ var _done := false
 var _artifacts_logged := 0
 var _used_once := {}
 var _special_t := 0.0
+var _event_t := 0.0
 var _shot_t := 3.0
 var _shot_n := 0
 
@@ -78,6 +79,27 @@ func _physics_process(delta: float) -> void:
 			_shot_n += 1
 			var img := get_viewport().get_texture().get_image()
 			img.save_png("%s/shot_%03d_%s.png" % [shots, _shot_n, GameManager.current_scene])
+	# Event screenshots: the moment a Mirror Domain opens / a parry ring turns cyan.
+	if OS.get_environment("ECHO_BOT_SHOTS") != "" and get_tree().current_scene:
+		_event_t -= delta
+		if _event_t <= 0.0:
+			for n in get_tree().current_scene.get_children():
+				var tag := ""
+				if n is MirrorDomain and n._r > 200.0:
+					tag = "domain"
+				elif n is ParryCue and n._in_window:
+					tag = "parry"
+				if n is ReflectionAlly and not has_meta("ally_shot") and GameManager.run_time - _scene_start > 8.0:
+					set_meta("ally_shot", true)
+					var sp: Vector2 = get_viewport().get_canvas_transform() * n.global_position
+					var img := get_viewport().get_texture().get_image()
+					var rect := Rect2i(Vector2i(clampi(int(sp.x) - 120, 0, 1040), clampi(int(sp.y) - 110, 0, 500)), Vector2i(240, 200))
+					img.get_region(rect).save_png("%s/ally_crop.png" % OS.get_environment("ECHO_BOT_SHOTS"))
+				if tag != "":
+					_event_t = 4.0
+					_shot_n += 1
+					get_viewport().get_texture().get_image().save_png("%s/event_%03d_%s.png" % [OS.get_environment("ECHO_BOT_SHOTS"), _shot_n, tag])
+					break
 	if _done:
 		return
 	var scene := GameManager.current_scene
@@ -114,6 +136,9 @@ func _physics_process(delta: float) -> void:
 			_tap_t = 0.35
 			_tap("interact")
 		return
+	# Test hook: open a Mirror Domain at the player every 3s (visual check).
+	if p and OS.get_environment("ECHO_BOT_TEST_DOMAIN") == "1" and GameManager.run_time - _scene_start > 6.0 and fmod(GameManager.run_time, 3.0) < delta:
+		MirrorDomain.open_at(root, p.global_position, 250.0)
 	# Test hook: die N times in world1 (graves, revives, sanity, rabid, Reflection ending).
 	var want_deaths := int(OS.get_environment("ECHO_BOT_DIE")) if OS.get_environment("ECHO_BOT_DIE") != "" else 0
 	if p and scene == "world1" and GameManager.deaths < want_deaths and not p.is_dead() and p._iframes_left <= 0.0 and GameManager.run_time - _scene_start > 12.0:

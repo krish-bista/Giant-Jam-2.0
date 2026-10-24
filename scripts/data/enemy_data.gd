@@ -7,7 +7,7 @@ const N := "res://assets/ninja/"
 const TYPES := {
 	# Tutorial: a hologram knight that never dies and swings when the player is close.
 	"dummy": {"char": N + "chars/holo", "hp": 30.0, "dmg": 12.0, "speed": 0.0, "range": 120.0, "cd": 2.2,
-		"windup": 0.9, "radius": 16.0, "state": "idle", "immortal": true, "drops": false, "light": Color(0.4, 0.9, 1.0)},
+		"windup": 0.9, "radius": 16.0, "state": "idle", "immortal": true, "drops": false, "light": Color(0.4, 0.9, 1.0), "parry_cue": true},
 	"drone": {"sheet": N + "enemies/eye.png", "hp": 20.0, "dmg": 8.0, "speed": 115.0, "range": 34.0, "cd": 1.2,
 		"windup": 0.45, "radius": 14.0, "state": "chase", "float": true, "light": Color(0.7, 0.4, 1.0)},
 	"gunner": {"sheet": N + "enemies/octopus.png", "hp": 25.0, "dmg": 10.0, "speed": 90.0, "range": 300.0, "cd": 2.2,
