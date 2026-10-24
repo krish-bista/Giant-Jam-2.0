@@ -1,27 +1,34 @@
 # Echo Breach — Audio Plan
 
-All audio lives in `audio/` (Azad owns it). Sound effects are `.wav` in `audio/sfx/`, music is `.ogg` in `audio/music/`.
+All audio lives in `audio/` (Azad owns it). Sound effects are in `audio/sfx/`, music in `audio/music/`.
 **Replacing a sound = overwrite the file with the same name.** No code changes needed.
 
-## Sound effects (placeholders already in `audio/sfx/`)
+## Sound effects (in `audio/sfx/`, played with `Audio.sfx("name")`)
 
-The current files are simple synth placeholders so Krish can wire them up now. Replace the important ones (★) with better versions when there's time.
+The code finds `.ogg` or `.wav` automatically, so you can swap formats freely. Sources are in [CREDITS.md](CREDITS.md).
 
-| File | Plays when | Who triggers it | Replace with |
-|---|---|---|---|
-| ★ `sfx_sword_swing.wav` | Every sword swing | `divine_sword.gd` `try_attack` | Freesound "sword whoosh" CC0, or jsfxr **Blip/Select** with noise wave |
-| ★ `sfx_hit.wav` | Any enemy takes damage | enemy `take_damage` | jsfxr **Hit/Hurt** |
-| ★ `sfx_shield_block.wav` | Late block (damage reduced) | player shield | Kenney "Impact Sounds" (metal) |
-| ★ `sfx_reflect.wav` | **Perfect** block / reflect | player shield | jsfxr **Powerup**, pitched up. Must feel amazing. |
-| `sfx_player_hurt.wav` | Player takes damage | player `take_damage` | jsfxr **Hit/Hurt** (lower) |
-| `sfx_enemy_die.wav` | Enemy dies | enemy | jsfxr **Explosion** (short) |
-| `sfx_dash.wav` | Dash starts | player `dash_started` | jsfxr noise whoosh |
-| ★ `sfx_portal.wav` | Entering a mirror fragment | portal before `go_to_scene` | Freesound "magic portal" CC0 |
-| `sfx_pickup.wav` | Health orb / loot picked up | pickup | jsfxr **Pickup/Coin** |
-| `sfx_artifact.wav` | Artifact picked up (with popup) | artifact pickup | jsfxr **Powerup** |
-| ★ `sfx_boss_roar.wav` | Boss intro banner | each boss `_ready` / intro | Freesound "monster roar" CC0, pitch-shift per boss |
-| `sfx_mirror_shatter.wav` | Final self-kill, the mirror breaks | final scene | Freesound "glass shatter" CC0 |
-| `sfx_ui_confirm.wav` | Dialogue advance, menu click | UI | jsfxr **Blip/Select** |
+| File | Plays when |
+|---|---|
+| `sfx_sword_swing` | Every sword swing |
+| `sfx_hit` | Any enemy or boss takes damage |
+| `sfx_shield_block` | Late block (damage reduced) |
+| `sfx_reflect` | **Perfect** block / reflect |
+| `sfx_player_hurt` | Player takes damage |
+| `sfx_enemy_die` | Enemy dies |
+| `sfx_dash` | Dash starts |
+| `sfx_portal` | A mirror fragment appears / is entered |
+| `sfx_pickup` | Artifact picked up |
+| `sfx_heal` | Health orb picked up |
+| `sfx_artifact` | (spare jingle) |
+| `sfx_boss_roar` | Boss intro, phase 2, the pack flips |
+| `sfx_boss_attack` | Boss laser / charge / ground slam |
+| `sfx_boss_die` | Boss defeated |
+| `sfx_laser` | Enemy and boss bolts |
+| `sfx_hypno` | Hypno Reverse |
+| `sfx_glitch` | Hypnotic pulse, helmet, ending prompt |
+| `sfx_chest_open` | Chest opened |
+| `sfx_mirror_shatter` | Final self-kill |
+| `sfx_ui_confirm` / `sfx_dialogue` | Interact / dialogue text |
 
 **Krish, the simplest way to play a sound:**
 ```gdscript
@@ -34,20 +41,16 @@ sfx.finished.connect(sfx.queue_free)
 ```
 Add `sfx.pitch_scale = randf_range(0.9, 1.1)` for hits and swings so repeats don't sound robotic.
 
-## Music (to do, hours 5–7)
+## Music (in `audio/music/`, played with `Audio.music("name")`, loops automatically)
 
-One track per era. If short on time: one track for everything + the SFX (that's on the cut list).
-
-| File | Scene(s) | Mood | Where to get it fast |
-|---|---|---|---|
-| `music_room.ogg` | amnesia_room, tutorial | Quiet ambient pad, uneasy | Pixabay Music: search "ambient mystery" |
-| `music_city.ogg` | world1 | Driving synth, tense | OpenGameArt (filter CC0): "synthwave battle" |
-| `music_jungle.ogg` | world2 | Drums, tribal, chase | OpenGameArt CC0: "tribal drums loop" |
-| `music_core.ogg` | world3 | Cold, pulsing, alien | OpenGameArt CC0: "sci-fi ambient loop" |
-| `music_final.ogg` | final | Slow, heavy, one repeating motif | Make it in BeepBox (10 min) |
-| *(none)* | ending | Silence. Only the shatter echo. | — |
-
-In Godot: select the `.ogg` → Import tab → enable **Loop** → Reimport.
+| File | Scene(s) |
+|---|---|
+| `music_room.ogg` | amnesia_room, tutorial |
+| `music_city.wav` | world1 |
+| `music_jungle.wav` | world2 |
+| `music_core.wav` | world3 |
+| `music_final.ogg` | final (after the cutscene) |
+| *(none)* | ending: silence |
 
 ## Tools and sources (all free)
 

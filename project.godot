@@ -18,6 +18,13 @@ config/name="Echo Breach"
 run/main_scene="res://scenes/levels/amnesia_room.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
+[autoload]
+
+Events="*res://autoload/events.gd"
+GameManager="*res://autoload/game_manager.gd"
+Audio="*res://autoload/audio.gd"
+Juice="*res://autoload/juice.gd"
+
 [display]
 
 window/size/viewport_width=1280

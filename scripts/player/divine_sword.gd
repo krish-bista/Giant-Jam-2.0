@@ -38,7 +38,9 @@ func try_attack(direction: Vector2, amount: float, attacker: Node2D) -> bool:
         if not target.has_method("take_damage"):
             continue
         var offset: Vector2 = target.global_position - global_position
-        if offset.length_squared() > attack_range * attack_range:
+        # Reach is measured to the target's edge, so big bosses can be hit from outside their body.
+        var target_radius: float = target.get("radius") if target.get("radius") != null else 0.0
+        if offset.length() - target_radius > attack_range:
             continue
         if not offset.is_zero_approx() and facing.dot(offset.normalized()) < minimum_dot:
             continue
