@@ -72,9 +72,33 @@ func activate() -> void:
 	active = true
 	visible = true
 	set_deferred("monitoring", true)
+	# First a round mirror opens in the ground, then the standing mirror rises out of it.
+	var pool := Sprite2D.new()
+	var gt := GradientTexture2D.new()
+	gt.width = 128
+	gt.height = 128
+	gt.gradient = Gradient.new()
+	pool.texture = gt
+	pool.scale = Vector2(2.4, 2.0)
+	pool.position = Vector2(0, -4)
+	pool.z_index = -12
+	pool.z_as_relative = false
+	var pm := ShaderMaterial.new()
+	pm.shader = preload("res://assets/shaders/mirror_floor.gdshader")
+	pm.set_shader_parameter("open", 0.0)
+	pm.set_shader_parameter("rim_color", Color(1.0, 0.4, 0.5) if final else Color(0.6, 0.95, 1.0))
+	pool.material = pm
+	add_child(pool)
+	move_child(pool, 0)
+	var tp := create_tween()
+	tp.tween_method(func(v: float): pm.set_shader_parameter("open", v), 0.0, 1.0, 0.5).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	_spr.scale = Vector2(3, 0.1)
+	_spr.visible = false
 	var t := create_tween()
+	t.tween_interval(0.35)
+	t.tween_callback(func(): _spr.visible = true)
 	t.tween_property(_spr, "scale", Vector2(3, 3), 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	Juice.light_flash(global_position, Color(0.7, 0.95, 1.0), 3.0, 4.0, 0.6)
 	Audio.sfx("sfx_portal", 0.0, -4.0)
 	Juice.burst(global_position + Vector2(0, -100), Color(1, 0.4, 0.5) if final else Color(0.6, 0.95, 1.0), 40, 260.0, 3.5)
 	Juice.shockwave(global_position + Vector2(0, -100), 0.03, 0.5)

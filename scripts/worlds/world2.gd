@@ -1,10 +1,13 @@
 extends Level
 ## THE FIRST HUNT - ten thousand years ago. You are the intruder: hunt the herd, then the pack
-## turns and hunts you for 10 seconds -> reward -> the Alpha. World weapon: Hunter's Axe.
+## turns and hunts you for 7 seconds -> reward -> the Alpha, against a 1:25 clock.
+## World weapon: Hunter's Axe.
 
+const SURVIVE := 7
 var meter := 0.0
 var _flipped := false
-const CLEARING := Vector2(1300, 720)
+const CLEARING := Vector2(1296, 720)   # the center: the mirror opens here
+const CLOCK := 85.0
 
 
 func configure() -> void:
@@ -21,7 +24,7 @@ func configure() -> void:
 
 func build_world() -> void:
 	keepout(CLEARING, 320.0)
-	place_weapon("hunter_axe", Vector2(430, 380))
+	place_weapon("hunter_axe", Vector2(1000, 1090))
 	var sway := {"sway": true}
 	border(["tree_cluster", "tree_cluster_olive", "pine_cluster", "tree_big"], 160.0, 2, sway)
 	prop("frog_statue", Vector2(620, 620))
@@ -31,25 +34,32 @@ func build_world() -> void:
 	for c in [Vector2(760, 700), Vector2(1900, 520), Vector2(2000, 1050), Vector2(500, 1050)]:
 		crate_cluster(c, ["pot", "vase", "sack"], 5, 0.2)
 	lore(Vector2(700, 700), "The first hunter was afraid too.")
-	add_chest(Vector2(2300, 300))
+	add_chest(Vector2(1900, 900))
 
 
 func run() -> void:
+	next_scene = "world3"
 	title_card("THE FIRST HUNT", "Ten thousand years ago.", "The First Hunt. Ten thousand years ago.")
-	await wait(4.2)
+	await wait(2.6)
+	start_clock(CLOCK)
+	if GameManager.has_flag("hypno_late"):
+		GameManager.flags.erase("hypno_late")
+		Events.ability_unlocked.emit("hypno")
+		Events.announce.emit("HYPNO REVERSE UNLOCKED")
+		Voice.say("HYPNO REVERSE UNLOCKED", "system")
 	summon_ally()
-	await wait(2.0)
+	await wait(1.4)
 	say_line("Here, I'm the stranger. Everything runs from me.", "you", Color(0.85, 1.0, 0.75))
 	set_objective("Hunt the herd: hits fill the hunt meter")
 	Events.tutorial_prompt.emit("Chase the animals. Hits fill the hunt meter.")
 	Events.hunt_meter_changed.emit(0.0)
 	var herd: Array = []
-	for i in 5:
-		herd.append(spawn("raptor", edge_point(260.0)))
-	herd.append(spawn("brute", edge_point(260.0)))
+	for i in 4:
+		herd.append(spawn("raptor", edge_point(240.0)))
+	herd.append(spawn("brute", edge_point(240.0)))
 	for e in herd:
-		e.damaged.connect(func(_a, s): if is_instance_valid(s) and s.is_in_group("player"): _add(10.0))
-		e.died.connect(func(_x): _add(25.0))
+		e.damaged.connect(func(_a, s): if is_instance_valid(s) and s.is_in_group("player"): _add(14.0))
+		e.died.connect(func(_x): _add(30.0))
 
 	while meter < 100.0:
 		await wait(0.2)
@@ -80,9 +90,9 @@ func run() -> void:
 				e.set_look({"sheet": EnemyData.TYPES.raptor.hunter_sheet})
 	for i in 3:
 		spawn("raptor", edge_point(), {"state": "hunter", "sheet": EnemyData.TYPES.raptor.hunter_sheet})
-	await wait(1.6)
+	await wait(1.0)
 	say_line("Now I'm the prey.", "you", Color(1, 0.7, 0.6))
-	for s in range(10, 0, -1):
+	for s in range(SURVIVE, 0, -1):
 		Events.tutorial_prompt.emit("SURVIVE: %d" % s)
 		await wait(1.0)
 	Events.tutorial_prompt.emit("")
@@ -96,19 +106,19 @@ func run() -> void:
 	var id := GameManager.roll_artifact("hunt")
 	if id != "":
 		Pickup.spawn_artifact(self, player.global_position + Vector2(0, -70), id)
-	await wait(3.5)
+	await wait(1.5)
 
 	set_objective("Something big is coming: go to the clearing")
 	objective = _marker(CLEARING)
-	while is_instance_valid(player) and player.global_position.distance_to(CLEARING) > 380.0:
+	while is_instance_valid(player) and player.global_position.distance_to(CLEARING) > 420.0:
 		await wait(0.3)
 	objective = null
 	set_objective("Defeat the Alpha")
 	var rex := spawn_boss("alpha_rex", CLEARING + Vector2(0, -200))
 	await rex.died
-	await wait_clear()
-	await wait(2.0)
-	var portal := add_portal("world3", CLEARING)
+	world_cleared()
+	await wait(1.2)
+	var portal := add_portal(next_scene, CLEARING)
 	portal.activate()
 	set_objective("Step into the mirror")
 	say_line("Go before they remember you.", "you", Color(0.85, 1.0, 0.75))

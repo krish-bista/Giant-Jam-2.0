@@ -141,10 +141,12 @@ func is_rabid() -> bool:
 
 
 func ending_type() -> String:
-	return "evil" if deaths >= EVIL_AT else "divine"
+	# Dying too often, or letting time run out at the last mirror, lets the reflection win.
+	return "evil" if deaths >= EVIL_AT or has_flag("reflection_won") else "divine"
 
 
-## The one scene switch everybody uses. transition: "fade" or "mirror" (the reversal flip).
+## The one scene switch everybody uses. transition: "fade", "mirror" (the reversal flip) or
+## "shatter" (time ran out: the screen cracks, light breaks through and it falls apart).
 func go_to_scene(scene_name: String, transition := "fade") -> void:
 	if _switching or not SCENES.has(scene_name):
 		if not SCENES.has(scene_name):
@@ -154,6 +156,8 @@ func go_to_scene(scene_name: String, transition := "fade") -> void:
 	input_locked = true
 	if transition == "mirror":
 		await _mirror_out()
+	elif transition == "shatter":
+		await _shatter_out()
 	else:
 		var t := create_tween()
 		t.tween_property(_fade, "modulate:a", 1.0, 0.35)
@@ -172,6 +176,8 @@ func go_to_scene(scene_name: String, transition := "fade") -> void:
 	_switching = false
 	if transition == "mirror":
 		_mirror_in()
+	elif transition == "shatter":
+		_shatter_in()
 	else:
 		var t2 := create_tween()
 		t2.tween_property(_fade, "modulate:a", 0.0, 0.35)
@@ -204,6 +210,120 @@ func _mirror_in() -> void:
 	t.tween_callback(func():
 		_flip.visible = false
 		_fade.color = Color.BLACK)
+
+
+## Time ran out: freeze the frame, crack it from the center (white light leaks through the
+## seams), then the pieces burst apart and fall away into white.
+func _shatter_out() -> void:
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	var tex := ImageTexture.create_from_image(img)
+	var vs := get_viewport().get_visible_rect().size
+	var k := Vector2(img.get_width(), img.get_height()) / vs
+	var layer := CanvasLayer.new()
+	layer.layer = 98
+	add_child(layer)
+	var light := ColorRect.new()
+	light.color = Color(1.0, 1.0, 1.0)
+	light.size = vs
+	light.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(light)
+	var root := Node2D.new()
+	layer.add_child(root)
+	# Crack pattern: rays from the center crossed by jagged rings; neighbours share corners.
+	var c := vs * 0.5
+	var rays := 15
+	var radii := [55.0, 140.0, 270.0, 440.0, 700.0, 1100.0]
+	var base := randf() * TAU
+	var angs: Array[float] = []
+	for j in rays:
+		angs.append(base + (j + randf_range(-0.3, 0.3)) * TAU / rays)
+	var grid: Array = []
+	for ri in radii.size():
+		var row: Array[Vector2] = []
+		for j in rays:
+			row.append(c + Vector2.from_angle(angs[j] + randf_range(-0.1, 0.1)) * radii[ri] * randf_range(0.85, 1.15))
+		grid.append(row)
+	var polys: Array = []
+	for j in rays:
+		var j2 := (j + 1) % rays
+		polys.append([c, grid[0][j], grid[0][j2]])
+		for ri in radii.size() - 1:
+			polys.append([grid[ri][j], grid[ri][j2], grid[ri + 1][j2], grid[ri + 1][j]])
+	var shards: Array[Polygon2D] = []
+	var segs: Array = []
+	for pts in polys:
+		var cen := Vector2.ZERO
+		for p in pts:
+			cen += p
+		cen /= pts.size()
+		var local := PackedVector2Array()
+		var uv := PackedVector2Array()
+		for p in pts:
+			local.append(p - cen)
+			uv.append(p * k)
+		var s := Polygon2D.new()
+		s.texture = tex
+		s.polygon = local
+		s.uv = uv
+		s.position = cen
+		s.set_meta("dir", (cen - c).normalized() if cen.distance_to(c) > 1.0 else Vector2.UP)
+		root.add_child(s)
+		shards.append(s)
+		for i in pts.size():
+			segs.append([pts[i], pts[(i + 1) % pts.size()]])
+	var cracks := Node2D.new()
+	cracks.set_meta("grow", 0.0)
+	cracks.draw.connect(func():
+		var g: float = cracks.get_meta("grow")
+		for sg in segs:
+			if sg[0].distance_to(c) < g and sg[1].distance_to(c) < g + 80.0:
+				cracks.draw_line(sg[0], sg[1], Color(1, 1, 1, 0.95), 2.5, true))
+	layer.add_child(cracks)
+	# 1) cracks run out from the center
+	Audio.sfx("sfx_crack", 0.0, 2.0, 1.0)
+	var t := create_tween()
+	t.set_ignore_time_scale(true)
+	t.tween_method(func(v: float):
+		cracks.set_meta("grow", v)
+		cracks.queue_redraw(), 0.0, 1300.0, 0.4).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	await t.finished
+	# 2) the pieces separate: light leaks through every seam
+	Audio.sfx("sfx_crack", 0.0, 2.0, 0.7)
+	var t2 := create_tween()
+	t2.set_ignore_time_scale(true)
+	t2.set_parallel(true)
+	for s in shards:
+		t2.tween_property(s, "position", s.position + s.get_meta("dir") * randf_range(4.0, 12.0), 0.22)
+	t2.tween_property(cracks, "modulate:a", 0.0, 0.22)
+	await t2.finished
+	# 3) shatter: everything flies apart and falls into the light
+	Audio.sfx("sfx_shatter_big", 0.0, 2.0)
+	Audio.sfx("sfx_mirror_shatter", 0.05, 0.0, 0.8)
+	var t3 := create_tween()
+	t3.set_ignore_time_scale(true)
+	t3.set_parallel(true)
+	for s in shards:
+		var d: Vector2 = s.get_meta("dir")
+		var dist := s.position.distance_to(c)
+		var dur := randf_range(0.6, 1.0) + dist * 0.0003
+		t3.tween_property(s, "position", s.position + d * randf_range(220.0, 620.0) + Vector2(0, randf_range(160.0, 520.0)), dur).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		t3.tween_property(s, "rotation", randf_range(-2.6, 2.6), dur)
+		t3.tween_property(s, "scale", Vector2.ONE * randf_range(0.5, 0.8), dur)
+		t3.tween_property(s, "modulate:a", 0.0, dur).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+	await t3.finished
+	_fade.color = Color(1, 1, 1)
+	_fade.modulate.a = 1.0
+	layer.queue_free()
+
+
+## The next world comes back out of the white.
+func _shatter_in() -> void:
+	var t := create_tween()
+	t.set_ignore_time_scale(true)
+	t.tween_interval(0.15)
+	t.tween_property(_fade, "modulate:a", 0.0, 0.8).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_callback(func(): _fade.color = Color.BLACK)
 
 
 ## Game over -> restart the current scene with the state you entered it with.
