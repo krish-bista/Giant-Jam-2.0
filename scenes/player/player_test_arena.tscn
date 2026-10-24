@@ -1,0 +1,68 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
+
+[sub_resource type="RectangleShape2D" id="WallTop"]
+size = Vector2(1280, 64)
+
+[sub_resource type="RectangleShape2D" id="WallBottom"]
+size = Vector2(1280, 64)
+
+[sub_resource type="RectangleShape2D" id="WallLeft"]
+size = Vector2(64, 720)
+
+[sub_resource type="RectangleShape2D" id="WallRight"]
+size = Vector2(64, 720)
+
+[sub_resource type="RectangleShape2D" id="Obstacle"]
+size = Vector2(180, 40)
+
+[node name="PlayerTestArena" type="Node2D"]
+
+[node name="Floor" type="Polygon2D" parent="."]
+color = Color(0.09, 0.12, 0.17, 1)
+polygon = PackedVector2Array(-608, -328, 608, -328, 608, 328, -608, 328)
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="Top" type="StaticBody2D" parent="Walls"]
+collision_layer = 1
+collision_mask = 0
+position = Vector2(0, -360)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Top"]
+shape = SubResource("WallTop")
+
+[node name="Bottom" type="StaticBody2D" parent="Walls"]
+collision_layer = 1
+collision_mask = 0
+position = Vector2(0, 360)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Bottom"]
+shape = SubResource("WallBottom")
+
+[node name="Left" type="StaticBody2D" parent="Walls"]
+collision_layer = 1
+collision_mask = 0
+position = Vector2(-640, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Left"]
+shape = SubResource("WallLeft")
+
+[node name="Right" type="StaticBody2D" parent="Walls"]
+collision_layer = 1
+collision_mask = 0
+position = Vector2(640, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Right"]
+shape = SubResource("WallRight")
+
+[node name="CenterObstacle" type="StaticBody2D" parent="Walls"]
+collision_layer = 1
+collision_mask = 0
+position = Vector2(180, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/CenterObstacle"]
+shape = SubResource("Obstacle")
