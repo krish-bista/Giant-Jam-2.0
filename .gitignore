@@ -2,13 +2,25 @@
 .godot/
 .import/
 export.cfg
-export_presets.cfg
+# export_presets.cfg IS tracked (Azad owns it) so anyone can rebuild the release
+
+# Builds
+builds/
+*.exe
+*.pck
+*.zip
 
 # Godot 4 generated build output
 *.translation
+
+# Editor backups / temp
+*.tmp
+*~
+*.TMP
 
 # IDE and OS files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+desktop.ini

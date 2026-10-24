@@ -1,0 +1,17 @@
+World	Wave	Start time (s)	Enemies	Spawn interval (s)	Next wave trigger	Expected clear time (s)
+world1	1	0	4 Drone	0.6	All dead + 3s	15
+world1	2	18	5 Drone + 2 Gunner	0.6	All dead + 3s	25
+world1	3	46	4 Drone + 3 Gunner	0.5	All dead + 3s	25
+world1	Mini boss	74	Hypnotic	-	Dead -> unlock Hypno Reverse, prompt	30
+world1	Boss	110	Warden	-	Dead -> portal opens	60
+world2	Hunt	0	5 Raptor (prey)	all at once	Hunt meter hits 100	30
+world2	Flip	30	same 5 Raptors become hunters	-	Survive 10s -> reward	10
+world2	Boss	45	Alpha Rex	-	Dead -> portal opens	60
+world3	Mirror 1	0	3 Mirror Construct	all at once	All dead	20
+world3	Mirror 2	22	4 Mirror Construct	all at once	All dead	20
+world3	Boss	45	Core Sentinel	-	Dead -> choice: keep fighting / final fragment	45
+						
+Hunt meter	Hit fleeing animal	+10				
+Hunt meter	Kill fleeing animal	+25				
+Hunt meter	Decay	0	No decay. Keep it simple.			
+Hunt meter	Survive the flip	Reward	Heal 30 + 1 guaranteed rare artifact			

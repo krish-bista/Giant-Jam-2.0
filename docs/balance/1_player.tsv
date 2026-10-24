@@ -1,0 +1,22 @@
+Stat / ability	Value	Unit	Notes
+max_health	100	hp	Artifacts can raise it
+damage	10	per hit	Sword hit damage
+speed	220	px/s	Move speed
+reflect_power	1.0	x	Perfect block sends back amount * reflect_power
+luck	0	points	Each point = +1% artifact drop chance and shifts rarity
+Sword cooldown	0.35	s	~2.8 swings/s
+Sword arc	100	deg	Toward mouse
+Sword range	48	px	1.5 tiles
+Sword knockback	120	px/s	Short shove so enemies don't stack on you
+Dash speed	520	px/s	
+Dash duration	0.15	s	Invulnerable while dashing
+Dash cooldown	0.8	s	
+Perfect block window	0.3	s	Hit lands within 0.3s of pressing block = reflect, take 0
+Late block damage taken	0.4	x	Holding block outside the window = take 40%
+Move speed while blocking	0.5	x	
+Hurt invulnerability	0.5	s	After taking a hit
+Hypno Reverse cone	60	deg	Unlocked after the Hypnotic mini boss
+Hypno Reverse range	140	px	
+Hypno Reverse duration	5	s	Flipped enemies attack other enemies
+Hypno Reverse cooldown	12	s	
+Health orb heal	15	hp	
