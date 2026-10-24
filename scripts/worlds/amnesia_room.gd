@@ -31,16 +31,17 @@ func build_world() -> void:
 	wall.add_child(shape)
 	add_child(wall)
 
-	prop("bed", Vector2(200, 300))
-	prop("bookshelf", Vector2(860, 200))
-	prop("shelf", Vector2(1010, 200))
-	prop("dresser", Vector2(420, 200))
-	prop("plant", Vector2(1210, 210))
-	prop("plant", Vector2(90, 640), {"collide": false})
-	prop("drawer", Vector2(1140, 200))
-	prop("mat", Vector2(648, 480), {"collide": false})
-	prop("table", Vector2(648, 320))
-	prop("stool", Vector2(560, 360))
+	var solid := {"solid": true}
+	prop("bed", Vector2(200, 310), solid)
+	prop("bookshelf", Vector2(860, 210), solid)
+	prop("shelf", Vector2(1010, 210), solid)
+	prop("dresser", Vector2(420, 210), solid)
+	prop("plant", Vector2(1210, 210), solid)
+	prop("plant", Vector2(90, 640), solid)
+	prop("drawer", Vector2(1140, 210), solid)
+	prop("mat", Vector2(648, 470), {"decal": true})
+	prop("table", Vector2(648, 330), solid)
+	prop("stool", Vector2(560, 380), solid)
 	prop("candle", Vector2(420, 150), {"collide": false, "light": Color(1.0, 0.7, 0.4), "energy": 1.4, "light_scale": 2.6})
 	prop("candle", Vector2(760, 296), {"collide": false, "light": Color(1.0, 0.7, 0.4), "energy": 1.2, "light_scale": 2.2})
 	prop("candle", Vector2(1010, 150), {"collide": false, "light": Color(1.0, 0.7, 0.4), "energy": 1.2, "light_scale": 2.2})
@@ -48,10 +49,13 @@ func build_world() -> void:
 	moon.position = Vector2(150, 160)
 	add_child(moon)
 
-	helmet = add_interactable(P + "props/vr_helmet.png", Vector2(648, 296), "[E] Put on the helmet", 90.0, 3.0)
+	# The VR helmet rests on the table (drawn above it; the table blocks you).
+	helmet = add_interactable(P + "props/vr_helmet.png", Vector2(648, 300), "[E] Put on the helmet", 110.0, 3.0)
+	helmet.z_index = 2
 	helmet.enabled = false
-	helmet.light_color = Color(0.5, 0.95, 1.0)
+	helmet.light_color = Color(0.4, 0.95, 1.0)
 	helmet.used.connect(_on_helmet)
+	_build_helmet_fx()
 
 	npc = add_interactable("", Vector2(980, 400), "[E] Talk", 100.0)
 	npc_sprite = AnimatedSprite2D.new()
@@ -81,6 +85,43 @@ func build_world() -> void:
 	door.used.connect(func(): say_line("The door doesn't open. Not from this side."))
 
 
+var _helmet_ring: Line2D
+var _helmet_scan: Line2D
+
+
+## High-tech touches: a holographic ring spinning over the helmet and a scan line sweeping it.
+func _build_helmet_fx() -> void:
+	_helmet_ring = Line2D.new()
+	var pts := PackedVector2Array()
+	for k in 33:
+		var a := k * TAU / 32.0
+		pts.append(Vector2(cos(a) * 34.0, sin(a) * 10.0))
+	_helmet_ring.points = pts
+	_helmet_ring.width = 2.0
+	_helmet_ring.default_color = Color(0.4, 0.95, 1.0, 0.7)
+	_helmet_ring.position = Vector2(0, -58)
+	helmet.add_child(_helmet_ring)
+	_helmet_scan = Line2D.new()
+	_helmet_scan.points = PackedVector2Array([Vector2(-26, 0), Vector2(26, 0)])
+	_helmet_scan.width = 2.0
+	_helmet_scan.default_color = Color(0.6, 1.0, 1.0, 0.8)
+	helmet.add_child(_helmet_scan)
+	var motes := CPUParticles2D.new()
+	motes.amount = 14
+	motes.lifetime = 1.4
+	motes.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	motes.emission_rect_extents = Vector2(22, 4)
+	motes.position = Vector2(0, -20)
+	motes.direction = Vector2.UP
+	motes.gravity = Vector2(0, -30)
+	motes.initial_velocity_min = 6.0
+	motes.initial_velocity_max = 18.0
+	motes.scale_amount_min = 1.5
+	motes.scale_amount_max = 2.5
+	motes.color = Color(0.5, 1.0, 1.0, 0.8)
+	helmet.add_child(motes)
+
+
 func run() -> void:
 	GameManager.reset_run()
 	player.setup_for_level()
@@ -95,6 +136,14 @@ func run() -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
+	if is_instance_valid(_helmet_ring):
+		var t := Time.get_ticks_msec() * 0.001
+		_helmet_ring.rotation = 0.0
+		_helmet_ring.scale = Vector2(1.0 + 0.08 * sin(t * 3.0), 1.0)
+		_helmet_ring.position.y = -58 + sin(t * 2.0) * 3.0
+		_helmet_ring.default_color.a = 0.45 + 0.3 * sin(t * 4.0)
+		_helmet_scan.position.y = -10 - 40.0 * fposmod(t * 0.8, 1.0)
+		_helmet_scan.default_color.a = 0.8 * (1.0 - fposmod(t * 0.8, 1.0))
 	if is_instance_valid(npc_sprite) and is_instance_valid(player):
 		var d := Sheet.dir_of(player.global_position - npc.global_position)
 		if npc_sprite.animation != "idle_" + d:

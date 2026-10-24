@@ -11,7 +11,7 @@ extends CharacterBody2D
 signal damaged(amount: float, source: Node)
 signal died(enemy: Enemy)
 
-const FLIP_TINT := Color(1.0, 0.45, 1.0)
+const FLIP_TINT := Color(0.55, 1.0, 1.0)
 
 var type_id := ""
 var cfg := {}
@@ -270,6 +270,8 @@ func _start_windup() -> void:
 	var t := _current_target()
 	if t:
 		_aim_point = t.global_position
+		if cfg.get("parry_cue", false) and t.is_in_group("player"):
+			ParryCue.show_on(t, windup)
 	_winding = true
 	_wind_left = windup
 	_cd_left = attack_cd
@@ -299,6 +301,9 @@ func _resolve_attack(target: Node2D) -> void:
 
 func take_damage(amount: float, source: Node = null) -> void:
 	if _dead or amount <= 0.0:
+		return
+	# Turned allies (Hypno Reverse) don't take your hits.
+	if state == "flipped" and source is Node2D and is_instance_valid(source) and source.is_in_group("player"):
 		return
 	damaged.emit(amount, source)
 	_hurt_flash = 0.1
@@ -368,7 +373,8 @@ func flip(duration: float) -> void:
 	_flip_left = duration
 	_winding = false
 	add_to_group("flipped")
-	Juice.fx("circle_spark", global_position, 2.0, 0.0, Color(2.0, 0.6, 1.9))
+	Juice.fx("circle_spark", global_position, 2.0, 0.0, Color(0.8, 1.6, 1.8))
+	Juice.text_pop(global_position + Vector2(0, -radius * 2.0), "ALLY", Color(0.6, 1.0, 1.0), 16, 24.0, 0.9)
 
 
 func _unflip() -> void:
@@ -423,7 +429,7 @@ func _draw() -> void:
 	if state == "flipped":
 		for i in 2:
 			var a0 := _t * 7.0 + i * PI
-			draw_arc(Vector2(0, -radius * 2.0 - 8.0), 8.0, a0, a0 + 2.2, 10, Color(2.2, 0.6, 2.2), 2.5, true)
+			draw_arc(Vector2(0, -radius * 2.0 - 8.0), 8.0, a0, a0 + 2.2, 10, Color(0.7, 1.4, 1.5), 2.5, true)
 	if immortal and state == "idle" and _winding:
 		var t := 1.0 - _wind_left / maxf(windup, 0.01)
 		draw_circle(Vector2.ZERO, attack_range * t, Color(1, 0.2, 0.2, 0.18))

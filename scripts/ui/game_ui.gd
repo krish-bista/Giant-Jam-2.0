@@ -360,9 +360,14 @@ func _build() -> void:
 	_cut_img.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_cut_root.add_child(_cut_img)
 	_cut_text = _label(32, Color(0.95, 0.95, 1.0))
-	_cut_text.position = Vector2(0, 640)
+	_cut_text.position = Vector2(0, 600)
 	_cut_text.size = Vector2(1280, 50)
 	_cut_root.add_child(_cut_text)
+	var cut_hint := _label(16, Color(0.7, 0.75, 0.9), HORIZONTAL_ALIGNMENT_RIGHT)
+	cut_hint.text = "[E] next"
+	cut_hint.position = Vector2(0, 676)
+	cut_hint.size = Vector2(1250, 24)
+	_cut_root.add_child(cut_hint)
 	_cut_root.visible = false
 	add_child(_cut_root)
 
@@ -507,23 +512,22 @@ func say(lines: Array, speaker := "", voice := "", face := "") -> void:
 		if is_instance_valid(_typing):
 			_typing.kill()
 		_typing = create_tween()
-		_typing.tween_property(_dlg_text, "visible_ratio", 1.0, 0.025 * text.length())
+		_typing.tween_property(_dlg_text, "visible_ratio", 1.0, 0.016 * text.length())
 		var length := Voice.say(text, voice) if voice != "" else 0.0
 		if length <= 0.0:
 			Audio.sfx("sfx_dialogue", 0.1, -10.0)
-		var auto := maxf(length + 0.9, 0.025 * text.length() + 1.6)
+		var auto := maxf(length + 0.5, 0.018 * text.length() + 1.1)
 		_cut_index += 1
 		var idx := _cut_index
 		get_tree().create_timer(auto).timeout.connect(func(): if _dlg_active and _cut_index == idx: _advance.emit())
+		# One press of [E] = next line (skips the rest of this one).
 		await _advance
-		if _dlg_text.visible_ratio < 1.0:
-			_typing.kill()
-			_dlg_text.visible_ratio = 1.0
-			await _advance
+		_typing.kill()
+		Voice.stop()
 	Voice.stop()
 	_dlg.visible = false
 	_dlg_active = false
-	await get_tree().create_timer(0.2).timeout
+	await get_tree().create_timer(0.12).timeout
 	GameManager.input_locked = false
 
 
@@ -538,15 +542,16 @@ func show_panels(panels: Array) -> void:
 		_cut_text.text = entry[1]
 		_cut_root.modulate.a = 0.0
 		var t := create_tween()
-		t.tween_property(_cut_root, "modulate:a", 1.0, 0.4)
+		t.tween_property(_cut_root, "modulate:a", 1.0, 0.18)
 		var length := Voice.say(entry[1], "narrator")
 		_cut_index += 1
 		var idx := _cut_index
-		get_tree().create_timer(maxf(3.5, length + 1.0)).timeout.connect(func(): if _cut_active and _cut_index == idx: _advance.emit())
+		get_tree().create_timer(maxf(2.0, length + 0.35)).timeout.connect(func(): if _cut_active and _cut_index == idx: _advance.emit())
 		await _advance
-		await get_tree().create_timer(0.15).timeout
+		Voice.stop()
+		await get_tree().create_timer(0.05).timeout
 	var out := create_tween()
-	out.tween_property(_cut_root, "modulate:a", 0.0, 0.4)
+	out.tween_property(_cut_root, "modulate:a", 0.0, 0.25)
 	await out.finished
 	_cut_root.visible = false
 	_cut_active = false
