@@ -1,0 +1,378 @@
+{
+ "tree_green": [
+  32,
+  31
+ ],
+ "tree_roots": [
+  31,
+  31
+ ],
+ "tree_bush": [
+  32,
+  29
+ ],
+ "tree_pine": [
+  32,
+  30
+ ],
+ "tree_big": [
+  48,
+  48
+ ],
+ "tree_cluster": [
+  64,
+  48
+ ],
+ "tree_cluster_olive": [
+  64,
+  48
+ ],
+ "pine_cluster": [
+  64,
+  47
+ ],
+ "tree_dead": [
+  32,
+  31
+ ],
+ "tree_thin": [
+  16,
+  48
+ ],
+ "bamboo": [
+  16,
+  46
+ ],
+ "stump": [
+  30,
+  23
+ ],
+ "bush_a": [
+  15,
+  13
+ ],
+ "bush_b": [
+  16,
+  14
+ ],
+ "bush_c": [
+  16,
+  12
+ ],
+ "bush_d": [
+  16,
+  14
+ ],
+ "fern": [
+  16,
+  14
+ ],
+ "flower_sun": [
+  15,
+  15
+ ],
+ "flower_red": [
+  14,
+  14
+ ],
+ "rock_brown": [
+  29,
+  27
+ ],
+ "rock_grey": [
+  32,
+  28
+ ],
+ "rock_brown_small": [
+  16,
+  16
+ ],
+ "rock_grey_small": [
+  16,
+  16
+ ],
+ "rocks_brown": [
+  61,
+  44
+ ],
+ "rocks_grey": [
+  61,
+  44
+ ],
+ "boulder_brown": [
+  64,
+  46
+ ],
+ "boulder_grey": [
+  64,
+  46
+ ],
+ "log": [
+  15,
+  32
+ ],
+ "frog_statue": [
+  32,
+  32
+ ],
+ "crystal_purple": [
+  15,
+  14
+ ],
+ "crystal_blue": [
+  15,
+  14
+ ],
+ "gem_block_purple": [
+  16,
+  16
+ ],
+ "gem_block_blue": [
+  16,
+  16
+ ],
+ "gem_rock": [
+  28,
+  25
+ ],
+ "barrel": [
+  16,
+  16
+ ],
+ "crate": [
+  16,
+  15
+ ],
+ "crate_b": [
+  14,
+  15
+ ],
+ "pot": [
+  14,
+  14
+ ],
+ "vase": [
+  16,
+  16
+ ],
+ "sack": [
+  10,
+  13
+ ],
+ "ruin_a": [
+  64,
+  44
+ ],
+ "ruin_b": [
+  48,
+  48
+ ],
+ "ruin_c": [
+  48,
+  43
+ ],
+ "ruin_d": [
+  32,
+  48
+ ],
+ "ruin_house_big": [
+  63,
+  79
+ ],
+ "ruin_rubble": [
+  48,
+  32
+ ],
+ "ruin_wall": [
+  48,
+  32
+ ],
+ "moss_trees": [
+  64,
+  48
+ ],
+ "moss_tree": [
+  32,
+  31
+ ],
+ "pillar": [
+  16,
+  42
+ ],
+ "pillar_broken": [
+  16,
+  32
+ ],
+ "shrine_ruin": [
+  32,
+  47
+ ],
+ "statue_lion": [
+  32,
+  32
+ ],
+ "statue_orb": [
+  30,
+  30
+ ],
+ "lamp_post": [
+  16,
+  29
+ ],
+ "banner_post": [
+  16,
+  29
+ ],
+ "tent": [
+  48,
+  45
+ ],
+ "tent_torn": [
+  48,
+  45
+ ],
+ "firepit": [
+  29,
+  30
+ ],
+ "sign": [
+  13,
+  11
+ ],
+ "grave": [
+  12,
+  15
+ ],
+ "arch": [
+  48,
+  42
+ ],
+ "head_statue": [
+  31,
+  31
+ ],
+ "table": [
+  48,
+  16
+ ],
+ "drawer": [
+  16,
+  23
+ ],
+ "bookshelf": [
+  32,
+  30
+ ],
+ "shelf": [
+  32,
+  29
+ ],
+ "dresser": [
+  32,
+  23
+ ],
+ "plant": [
+  15,
+  24
+ ],
+ "stool": [
+  16,
+  9
+ ],
+ "mat": [
+  47,
+  48
+ ],
+ "candle": [
+  15,
+  14
+ ],
+ "door": [
+  14,
+  27
+ ],
+ "crystal_tower_0": [
+  28,
+  32
+ ],
+ "crystal_tower_1": [
+  29,
+  32
+ ],
+ "crystal_tower_2": [
+  29,
+  32
+ ],
+ "gem_rock_core": [
+  28,
+  25
+ ],
+ "gem_rock_silver": [
+  28,
+  25
+ ],
+ "arch_core": [
+  48,
+  42
+ ],
+ "arch_silver": [
+  48,
+  42
+ ],
+ "pillar_core": [
+  16,
+  42
+ ],
+ "pillar_silver": [
+  16,
+  42
+ ],
+ "pillar_broken_core": [
+  16,
+  32
+ ],
+ "pillar_broken_silver": [
+  16,
+  32
+ ],
+ "head_statue_core": [
+  31,
+  31
+ ],
+ "head_statue_silver": [
+  31,
+  31
+ ],
+ "statue_orb_core": [
+  30,
+  30
+ ],
+ "statue_orb_silver": [
+  30,
+  30
+ ],
+ "barrel_explosive": [
+  16,
+  16
+ ],
+ "crate_holo": [
+  16,
+  15
+ ],
+ "barrel_holo": [
+  16,
+  16
+ ],
+ "chest_closed": [
+  16,
+  14
+ ],
+ "chest_open": [
+  16,
+  14
+ ],
+ "bed": [
+  32,
+  46
+ ]
+}
